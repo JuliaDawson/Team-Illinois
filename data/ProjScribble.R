@@ -84,7 +84,16 @@ all_the_DF = merge(intermediate_join, additional_csv, by=c("State","Region"))
 
 # Some additional clean up 
 all_the_DF = select(all_the_DF, -contains("County"))
-all_the_DF = subset(all_the_DF, all_the_DF$Region != "NA")
+all_the_DF = select(all_the_DF, -contains("Asian"))
+all_the_DF = select(all_the_DF, -contains("Black"))
+all_the_DF = select(all_the_DF, -contains("AIAN"))
+all_the_DF = select(all_the_DF, -contains("White"))
+all_the_DF = select(all_the_DF, -contains("Hispanic"))
+all_the_DF = select(all_the_DF, -contains("X1"))
+all_the_DF = select(all_the_DF, -contains("#"))
+
+
+
 # FINAL COUNT is 3142 observations
 
 head(all_the_DF)
