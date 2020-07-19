@@ -1,0 +1,64 @@
+---
+title: "Team Illinois Project Proposal"
+author: "STAT 420, Summer 2020"
+date: '7/21/2020'
+output:
+  html_document: 
+    theme: readable
+    toc: yes
+  pdf_document: default
+urlcolor: cyan
+---
+
+***
+
+**Team Illinois Members**
+
+  - Julia Dawson 
+  
+  - Saumya Singh
+  
+  - Joseph Stewart
+
+
+**Tentative Project Title**
+
+Predicting Premature Death Based on Health and Socio-economic Factors
+
+***
+
+**Background Information on the Data Sets and Citation**
+
+The data for this project were obtained from https://www.countyhealthrankings.org/. County Health Rankings ranks each county within each state based on a variety of health measures obtained from national and state data sources. This project combines many of the data sets from County Health Rankings into a single data set which will be used to identify a good model for predicting the value of the "Years of Potential Life Lost Rate" variable. This variable represents premature death for a given region (county, parish, etc) in that the value is the total number of years lost per 100,000 people based on health and socio-economic factors. These factors are weighted to obtain a ranking for each region within each state. 
+
+The raw data files can be obtained at https://www.countyhealthrankings.org/explore-health-rankings/rankings-data-documentation. 
+
+**Description of the Data File**
+
+The data file for this project contains a compilation of the various data sets provided by County Health Rankings. These files were merged together and a preliminary cleaning was conducted to reduce the number of predictor variables. Many of the variables provided redundant data such as providing a number of smokers in a region as well as the percentage of smokers. The percentage predictor variables were chosen over the quantity variables. There were also several of the categories of predictors that were broken down by race in addition to the composite values. These race-specific attributes had N/A values in too many observations to be useful as predictors so they are or will be ommitted from the final data set.
+
+The data included with this proposal contains 3193 observations and 249 predictor variables after preliminary cleaning. The data will be further reduced to have < 30 predictors from which to build models and conduct tests.The predictor variables will be made up of categorical geographic data such as state and county, health related numeric variables such as percentage of low birth weight, percentage of smokers, and percentage of adults with diabetes, and socio-economic numeric variables such as percentage of single parent households, percentage of people with some college, and percentage of people unemployed.  
+
+**Statement of the Interest in the Data Set Which We Hope to Explore**
+
+Team Illinois would like to explore this data set in an attempt to identify which health, socio-economic, and geographical variables most-contribute to premature death. It would be interesting to compare the results of this project with those of County Health Rankings to see if similar conclusions are reached, or if this project's selected model produces differing results than the County Health Rankings weighted, all-inclusive model.
+
+***
+
+**Evidence of Data Loading**
+
+The data files included in this proposal contain joined spreadsheets and will be further cleaned and reduced to what will ultimately become the final data set suitable for the project. The column titled "Years of Potential Life Lost Rate" will serve as the response variable for the project. The code chunk below will read in 3 partially cleaned data files, merge them, and output the first five values of the response variable. The number of observations and variables are also displayed. 
+
+```{r data_load, message=FALSE, warning=FALSE}
+library(readr)
+outcomes_csv = read_csv("data/Consolidated_Outcomes_Factors_Rankings.csv") 
+rank_csv = read_csv("data/Consolidated_RankedMeasureData.csv")
+additional_csv = read_csv("data/Consolidated_AdditionalMeasureData.csv") 
+
+intermediate_join = merge(outcomes_csv, rank_csv, by=c("State","Region"))
+all_the_DF = merge(intermediate_join, additional_csv, by=c("State","Region"))
+
+head(all_the_DF[, "Years of Potential Life Lost Rate"], 5)
+nrow(all_the_DF)
+ncol(all_the_DF) - 1 
+```
