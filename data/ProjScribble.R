@@ -75,12 +75,14 @@ write.csv(dfr, consolidated_file_name_Rank)
 #### Read the consolidated files #### 
 #####################################
 
-outcomes_csv = read_csv("data/Consolidated_Outcomes_Factors_Rankings.csv") 
-rank_csv = read_csv("data/Consolidated_RankedMeasureData.csv")
-additional_csv = read_csv("data/Consolidated_AdditionalMeasureData.csv") 
+outcomes_csv = read_csv("Consolidated_Outcomes_Factors_Rankings.csv") 
+rank_csv = read_csv("Consolidated_RankedMeasureData.csv")
+additional_csv = read_csv("Consolidated_AdditionalMeasureData.csv") 
 
-intermediate_join = merge(outcomes_csv, rank_csv, by=c("State","Region"))
-all_the_DF = merge(intermediate_join, additional_csv, by=c("State","Region"))
+#intermediate_join = merge(outcomes_csv, rank_csv, by=c("State","Region"))
+#all_the_DF = merge(intermediate_join, additional_csv, by=c("State","Region"))
+
+all_the_DF = merge(rank_csv, additional_csv, by=c("State","Region"))
 
 # Some additional clean up 
 all_the_DF = select(all_the_DF, -contains("County"))
@@ -91,12 +93,10 @@ all_the_DF = select(all_the_DF, -contains("White"))
 all_the_DF = select(all_the_DF, -contains("Hispanic"))
 all_the_DF = select(all_the_DF, -contains("X1"))
 all_the_DF = select(all_the_DF, -contains("#"))
+all_the_DF = select(all_the_DF, -contains("Z-Score"))
+all_the_DF = select(all_the_DF, -contains("Unreliable"))
 
-
-
-# FINAL COUNT is 3142 observations
-
-head(all_the_DF)
+write.csv(all_the_DF, "consolidated_95_observations")
 
 
 
