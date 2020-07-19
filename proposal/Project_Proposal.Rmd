@@ -35,9 +35,11 @@ The raw data files can be obtained at https://www.countyhealthrankings.org/explo
 
 **Description of the Data File**
 
-The data file for this project contains a compilation of the various data sets provided by County Health Rankings. These files were merged together and a preliminary cleaning was conducted to reduce the number of predictor variables. Many of the variables provided redundant data such as providing a number of smokers in a region as well as the percentage of smokers. The percentage predictor variables were chosen over the quantity variables. There were also several of the categories of predictors that were broken down by race in addition to the composite values. These race-specific attributes had N/A values in too many observations to be useful as predictors so they are or will be ommitted from the final data set.
+The raw data are contained in the county_data.zip file and consist of multiple data files obtained by County Health Rankings from various sources. This proposal includes the consolidated_data.csv file which is a compilation of the raw data after a preliminary cleaning has been conducted. The raw data consisted of over 240 variables and the preliminary cleaning reduced this number to 96 by removing redundancies and sparsely populated variables. 
 
-The data included with this proposal contains 3193 observations and 249 predictor variables after preliminary cleaning. The data will be further reduced to have < 30 predictors from which to build models and conduct tests.The predictor variables will be made up of categorical geographic data such as state and county, health related numeric variables such as percentage of low birth weight, percentage of smokers, and percentage of adults with diabetes, and socio-economic numeric variables such as percentage of single parent households, percentage of people with some college, and percentage of people unemployed.  
+The redundant variables included many examples of provideing a quantity and a percentage of some factor. For example, there were variables for the number of smokers in a region as well as the percentage of the population that smoked. The percentage variables were chosen over the quantity variables and the quantity variable were ommitted There were also many race-specific variables that had N/A values in too many observations to be useful as predictors. These variables were ommitted as well. 
+
+The consolidated_data.csv file contains 3142 observations, 1 response variable, and 95 predictor variables after a preliminary cleaning. The data will be further reduced to have < 30 predictors from which to build models and conduct tests. The predictor variables will be made up of categorical geographic data such as state and county, health related numeric variables such as percentage of low birth weight, percentage of smokers, and percentage of adults with diabetes, and socio-economic numeric variables such as percentage of single parent households, percentage of people with some college, and percentage of people unemployed.  
 
 **Statement of the Interest in the Data Set Which We Hope to Explore**
 
@@ -51,14 +53,8 @@ The data files included in this proposal contain joined spreadsheets and will be
 
 ```{r data_load, message=FALSE, warning=FALSE}
 library(readr)
-outcomes_csv = read_csv("data/Consolidated_Outcomes_Factors_Rankings.csv") 
-rank_csv = read_csv("data/Consolidated_RankedMeasureData.csv")
-additional_csv = read_csv("data/Consolidated_AdditionalMeasureData.csv") 
-
-intermediate_join = merge(outcomes_csv, rank_csv, by=c("State","Region"))
-all_the_DF = merge(intermediate_join, additional_csv, by=c("State","Region"))
-
-head(all_the_DF[, "Years of Potential Life Lost Rate"], 5)
-nrow(all_the_DF)
-ncol(all_the_DF) - 1 
+data = read_csv("data/consolidated_data.csv")
+head(data[, "Years of Potential Life Lost Rate"], 5)
+nrow(data) # Number of observations
+ncol(data) - 1 # Number of predictor variables
 ```

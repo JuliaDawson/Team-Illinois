@@ -395,27 +395,29 @@ summary {
 <p>The data for this project were obtained from <a href="https://www.countyhealthrankings.org/" class="uri">https://www.countyhealthrankings.org/</a>. County Health Rankings ranks each county within each state based on a variety of health measures obtained from national and state data sources. This project combines many of the data sets from County Health Rankings into a single data set which will be used to identify a good model for predicting the value of the “Years of Potential Life Lost Rate” variable. This variable represents premature death for a given region (county, parish, etc) in that the value is the total number of years lost per 100,000 people based on health and socio-economic factors. These factors are weighted to obtain a ranking for each region within each state.</p>
 <p>The raw data files can be obtained at <a href="https://www.countyhealthrankings.org/explore-health-rankings/rankings-data-documentation" class="uri">https://www.countyhealthrankings.org/explore-health-rankings/rankings-data-documentation</a>.</p>
 <p><strong>Description of the Data File</strong></p>
-<p>The data file for this project contains a compilation of the various data sets provided by County Health Rankings. These files were merged together and a preliminary cleaning was conducted to reduce the number of predictor variables. Many of the variables provided redundant data such as providing a number of smokers in a region as well as the percentage of smokers. The percentage predictor variables were chosen over the quantity variables. There were also several of the categories of predictors that were broken down by race in addition to the composite values. These race-specific attributes had N/A values in too many observations to be useful as predictors so they are or will be ommitted from the final data set.</p>
-<p>The data included with this proposal contains 3193 observations and 249 predictor variables after preliminary cleaning. The data will be further reduced to have &lt; 30 predictors from which to build models and conduct tests.The predictor variables will be made up of categorical geographic data such as state and county, health related numeric variables such as percentage of low birth weight, percentage of smokers, and percentage of adults with diabetes, and socio-economic numeric variables such as percentage of single parent households, percentage of people with some college, and percentage of people unemployed.</p>
+<p>The raw data are contained in the county_data.zip file and consist of multiple data files obtained by County Health Rankings from various sources. This proposal includes the consolidated_data.csv file which is a compilation of the raw data after a preliminary cleaning has been conducted. The raw data consisted of over 240 variables and the preliminary cleaning reduced this number to 96 by removing redundancies and sparsely populated variables.</p>
+<p>The redundant variables included many examples of provideing a quantity and a percentage of some factor. For example, there were variables for the number of smokers in a region as well as the percentage of the population that smoked. The percentage variables were chosen over the quantity variables and the quantity variable were ommitted There were also many race-specific variables that had N/A values in too many observations to be useful as predictors. These variables were ommitted as well.</p>
+<p>The consolidated_data.csv file contains 3142 observations, 1 response variable, and 95 predictor variables after a preliminary cleaning. The data will be further reduced to have &lt; 30 predictors from which to build models and conduct tests. The predictor variables will be made up of categorical geographic data such as state and county, health related numeric variables such as percentage of low birth weight, percentage of smokers, and percentage of adults with diabetes, and socio-economic numeric variables such as percentage of single parent households, percentage of people with some college, and percentage of people unemployed.</p>
 <p><strong>Statement of the Interest in the Data Set Which We Hope to Explore</strong></p>
 <p>Team Illinois would like to explore this data set in an attempt to identify which health, socio-economic, and geographical variables most-contribute to premature death. It would be interesting to compare the results of this project with those of County Health Rankings to see if similar conclusions are reached, or if this project’s selected model produces differing results than the County Health Rankings weighted, all-inclusive model.</p>
 <hr />
 <p><strong>Evidence of Data Loading</strong></p>
 <p>The data files included in this proposal contain joined spreadsheets and will be further cleaned and reduced to what will ultimately become the final data set suitable for the project. The column titled “Years of Potential Life Lost Rate” will serve as the response variable for the project. The code chunk below will read in 3 partially cleaned data files, merge them, and output the first five values of the response variable. The number of observations and variables are also displayed.</p>
 <pre class="r"><code>library(readr)
-outcomes_csv = read_csv(&quot;data/Consolidated_Outcomes_Factors_Rankings.csv&quot;) 
-rank_csv = read_csv(&quot;data/Consolidated_RankedMeasureData.csv&quot;)
-additional_csv = read_csv(&quot;data/Consolidated_AdditionalMeasureData.csv&quot;) 
-
-intermediate_join = merge(outcomes_csv, rank_csv, by=c(&quot;State&quot;,&quot;Region&quot;))
-all_the_DF = merge(intermediate_join, additional_csv, by=c(&quot;State&quot;,&quot;Region&quot;))
-
-head(all_the_DF[, &quot;Years of Potential Life Lost Rate&quot;], 5)</code></pre>
-<pre><code>## [1]  8128.591  7354.123 10253.573 11977.539 11335.071</code></pre>
-<pre class="r"><code>nrow(all_the_DF)</code></pre>
-<pre><code>## [1] 3193</code></pre>
-<pre class="r"><code>ncol(all_the_DF) - 1 </code></pre>
-<pre><code>## [1] 249</code></pre>
+data = read_csv(&quot;data/consolidated_data.csv&quot;)
+head(data[, &quot;Years of Potential Life Lost Rate&quot;], 5)</code></pre>
+<pre><code>## # A tibble: 5 x 1
+##   `Years of Potential Life Lost Rate`
+##                                 &lt;dbl&gt;
+## 1                               8129.
+## 2                               7354.
+## 3                              10254.
+## 4                              11978.
+## 5                              11335.</code></pre>
+<pre class="r"><code>nrow(data) # Number of observations</code></pre>
+<pre><code>## [1] 3142</code></pre>
+<pre class="r"><code>ncol(data) - 1 # Number of predictor variables</code></pre>
+<pre><code>## [1] 95</code></pre>
 
 
 
