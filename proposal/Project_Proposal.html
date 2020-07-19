@@ -405,15 +405,8 @@ summary {
 <p>The data files included in this proposal contain joined spreadsheets and will be further cleaned and reduced to what will ultimately become the final data set suitable for the project. The column titled “Years of Potential Life Lost Rate” will serve as the response variable for the project. The code chunk below will read in 3 partially cleaned data files, merge them, and output the first five values of the response variable. The number of observations and variables are also displayed.</p>
 <pre class="r"><code>library(readr)
 data = read_csv(&quot;data/consolidated_data.csv&quot;)
-head(data[, &quot;Years of Potential Life Lost Rate&quot;], 5)</code></pre>
-<pre><code>## # A tibble: 5 x 1
-##   `Years of Potential Life Lost Rate`
-##                                 &lt;dbl&gt;
-## 1                               8129.
-## 2                               7354.
-## 3                              10254.
-## 4                              11978.
-## 5                              11335.</code></pre>
+head(data$&quot;Years of Potential Life Lost Rate&quot;, 5)</code></pre>
+<pre><code>## [1]  8128.591  7354.123 10253.573 11977.539 11335.071</code></pre>
 <pre class="r"><code>nrow(data) # Number of observations</code></pre>
 <pre><code>## [1] 3142</code></pre>
 <pre class="r"><code>ncol(data) - 1 # Number of predictor variables</code></pre>

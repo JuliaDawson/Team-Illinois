@@ -54,7 +54,7 @@ The data files included in this proposal contain joined spreadsheets and will be
 ```{r data_load, message=FALSE, warning=FALSE}
 library(readr)
 data = read_csv("data/consolidated_data.csv")
-head(data[, "Years of Potential Life Lost Rate"], 5)
+head(data$"Years of Potential Life Lost Rate", 5)
 nrow(data) # Number of observations
 ncol(data) - 1 # Number of predictor variables
 ```
