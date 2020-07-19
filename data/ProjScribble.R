@@ -95,8 +95,15 @@ all_the_DF = select(all_the_DF, -contains("X1"))
 all_the_DF = select(all_the_DF, -contains("#"))
 all_the_DF = select(all_the_DF, -contains("Z-Score"))
 all_the_DF = select(all_the_DF, -contains("Unreliable"))
+all_the_DF = subset(all_the_DF, all_the_DF$Region != "NA")
 
-write.csv(all_the_DF, "consolidated_95_observations")
+write.csv(all_the_DF, "Consolidated_95_observations.csv")
+
+
+# FINAL COUNT is 3142 observations, 95 predictors
+proposal_csv = read_csv("Consolidated_95_observations.csv") 
+head(proposal_csv)
+
 
 
 
