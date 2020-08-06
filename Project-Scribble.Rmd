@@ -1,0 +1,245 @@
+---
+title: "Project-Scribble-SS"
+author: "Saumya Singh"
+date: "7/30/2020"
+output:
+  html_document: 
+    theme: readable
+    toc: yes
+  pdf_document: default
+urlcolor: cyan
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+library(dplyr)
+library(faraway)
+library(lmtest)
+library(MASS)
+num_sims = 2000
+
+temp_DF = read_csv("Team-Illinois//data//Consolidated_95_observations.csv") 
+
+
+calc_loocv_rmse = function(model) {
+  sqrt(mean((resid(model) / (1 - hatvalues(model))) ^ 2))
+}
+```
+
+## Variable selection
+
+
+```{r cars}
+data_set = c("Years of Potential Life Lost Rate",
+               "% Fair or Poor Health",
+               "% Low Birthweight",
+               "% Adults with Obesity",
+               "% Excessive Drinking",
+               "High School Graduation Rate",
+               "% Unemployed",
+               "Annual Average Violent Crimes",
+               "Presence of Water Violation",
+               "% Frequent Physical Distress",
+               "HIV Prevalence Rate",
+               "% Limited Access to Healthy Foods",
+               "Median Household Income",
+               "% Homeowners")
+
+final_df = subset(temp_DF, select = data_set)
+names(final_df) = c("YPLLRate","HealthPoorPct","LBWPct","ObeseAdultsPct","DrinkExcPct",
+                    "HSGradRate","UnemployedPct","ViolsCrimeAnlAvg","WaterViol",
+                    "DistressFreqPhysPct","HIVRate","FoodHealthLimAccPct",
+                    "IncHousehldMedian","HomeownersPct")
+final_df = na.omit(final_df)
+final_df$`WaterViol` = as.factor(final_df$`WaterViol`)
+
+indexes = sample(nrow(final_df), (nrow(final_df)) /2)
+train_df = final_df[indexes,]
+test_df = final_df[-indexes,]
+
+```
+
+## Pairs plot of data
+
+```{r, fig.height=10, fig.width=15}
+pairs(test_df)
+```
+
+## TODO try transformations of predictors
+
+```{r}
+par(mfrow = c(2,2))
+
+plot(final_df$HSGradRate, 
+     final_df$YPLLRate, 
+     col = "dodgerblue", 
+     pch = 20,
+)
+
+plot(final_df$HSGradRate, 
+     log(final_df$YPLLRate), 
+     col = "dodgerblue", 
+     pch = 20,
+)
+
+```
+
+
+## Model 1: with ALL manually selected predictors 
+
+```{r}
+#create a model with all predictors
+model_1 = lm(YPLLRate ~ . , data = test_df)
+
+```
+
+**Fitted versus Residuals Plot**
+```{r}
+plot(fitted(model_1), resid(model_1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = " Model 1")
+abline(h = 0, col = "darkorange", lwd = 2)
+
+
+hist(resid(model_1),
+     xlab   = "Residuals",
+     main   = "Histogram of Residuals, Model 1",
+     col    = "darkorange",
+     border = "dodgerblue",
+     breaks = 45)
+
+```
+```{r}
+qqnorm(resid(model_1), main = "Normal Q-Q Plot, Model 1", col = "darkgrey")
+qqline(resid(model_1), col = "dodgerblue", lwd = 2)
+```
+
+**Other diagnostics**
+
+- VIF
+```{r}
+vif(model_1)
+```
+
+- Adjusted R Squared
+```{r}
+summary(model_1)$adj.r.squared 
+```
+
+- LOOCV RMSE
+```{r}
+calc_loocv_rmse(model_1)
+```
+
+- BP Test
+```{r}
+bptest(model_1)
+```
+
+
+## BOX-COX transformation on response
+
+```{r}
+boxcox(model_1, lambda = seq(-0.25, 0.75, by = 0.05), plotit = TRUE)
+```
+
+## MODEL 2 - transformed response
+```{r}
+model_1_cox = lm((((YPLLRate ^ 0.3) - 1) / 0.3) ~ . , data = test_df)
+```
+
+**Fitted versus Residuals Plot**
+```{r}
+plot(fitted(model_1_cox), resid(model_1_cox), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = " Model 2")
+abline(h = 0, col = "darkorange", lwd = 2)
+```
+
+**Fitted versus Residuals Plot**
+```{r}
+hist(resid(model_1_cox),
+     xlab   = "Residuals",
+     main   = "Histogram of Residuals, Model 2",
+     col    = "darkorange",
+     border = "dodgerblue",
+     breaks = 45)
+```
+
+**QQ Plot**
+```{r}
+qqnorm(resid(model_1_cox), main = "Normal Q-Q Plot, Model 2", col = "darkgrey")
+qqline(resid(model_1_cox), col = "dodgerblue", lwd = 2)
+```
+
+**Other diagnostics**
+
+- VIF
+```{r}
+vif(model_1_cox)
+```
+
+- Adjusted R Squared
+```{r}
+summary(model_1_cox)$adj.r.squared 
+```
+
+- LOOCV RMSE
+```{r}
+calc_loocv_rmse(model_1_cox)
+```
+
+- BP TEST
+```{r}
+  bptest(model_1_cox)
+```
+
+## BACKWARD AIC on MODEL 1
+```{r}
+(back_aic_mod = step(model_1, direction = "backward", trace=0))
+
+```
+
+```{r}
+vif(back_aic_mod)
+```
+
+## BACKWARD AIC on MODEL 1 - remove DistressFreqPhysPct
+
+```{r}
+model_3 = lm(formula = (((YPLLRate ^ 0.3) - 1) / 0.3)  ~ HealthPoorPct + LBWPct + ObeseAdultsPct + DrinkExcPct + WaterViol + FoodHealthLimAccPct + IncHousehldMedian + HomeownersPct, data = test_df)
+```
+
+- VIF
+```{r}
+vif(model_3)
+```
+
+- Adjusted R Squared
+```{r}
+summary(model_3)$adj.r.squared 
+```
+
+- LOOCV RMSE
+```{r}
+calc_loocv_rmse(model_3)
+```
+
+- BP TEST
+```{r}
+  bptest(model_3)
+```
+
+
+
+
+
+
+
+```{r}
+rmse  = function(actual, predicted) {
+  sqrt(mean((actual - predicted) ^ 2))
+}
+```
+
