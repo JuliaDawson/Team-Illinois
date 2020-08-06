@@ -388,15 +388,15 @@ summary {
 <p><strong>adjusted R-squared</strong> is a modified version of R-squared that has been adjusted for the number of predictors in the model. The adjusted R-squared increases only if the new term improves the model more than would be expected by chance. It decreases when a predictor improves the model by less than expected by chance.</p>
 <p><strong>LOOCV RMSE</strong>: leave-one out cross-validated RMSE allows us to check for overfitting.</p>
 <p><strong>Correlation Coefficients</strong> <strong>Partial Correlation Coefficients</strong></p>
-<p><strong>Shapiro-Wilk Test</strong>: is a way to tell if a random sample comes from a normal distribution. The test gives you a W value; small values indicate your sample is not normally distributed (you can reject the null hypothesis that your population is normally distributed if your values are under a certain threshold).</p>
+<p><strong>Shapiro-Wilk Test</strong>: Shapiro test assesses the normality of errors. The null hypothesis assumes data were sampled from a normal distribution. A small p-value rejects the null hypothesis.</p>
 <p><strong>Breusch-Pagan-Godfrey Test</strong>: <a href="https://www.statisticshowto.com/breusch-pagan-godfrey-test/" class="uri">https://www.statisticshowto.com/breusch-pagan-godfrey-test/</a> Heteroscedastic data. … Heteroscedasticity means “differently scattered”; this is opposite to homoscedastic, which means “same scatter.” Homoscedasticity in regression is an important assumption; if the assumption is violated, you won’t be able to use regression analysis. If bptest gives a very small p-value so we reject the null hypothesis of constant variance.</p>
 <p><strong>Durbin-Watson</strong>: <a href="https://www.statisticshowto.com/durbin-watson-test-coefficient" class="uri">https://www.statisticshowto.com/durbin-watson-test-coefficient</a> dwtest p — p-value of test p-value of the test, returned as a numeric value. dwtest tests whether the residuals are uncorrelated, against the alternative that autocorrelation exists among the residuals. A small p-value indicates that the residuals are autocorrelated. 0 to &lt; 2 is positive autocorrelation. &gt;2 to 4 is negative autocorrelation. Test statistics between 1.5 and 2.5 are relatively normal. The null hypothesis for dwtest is no first order correlation exists. Our p-value is higher than alpha 0.05 so we cannot reject the null hypothesis.</p>
 </div>
 <div id="model-search" class="section level2">
 <h2>Model Search:</h2>
 <ul>
-<li>Result selection: We chose YPLLRate. YPLLRate had the most highly correlated predictors.</li>
-<li>Predictor selection:
+<li><p>Result selection: We chose YPLLRate. YPLLRate had the most highly correlated predictors.</p></li>
+<li><p>Predictor selection:</p>
 <ul>
 <li>Predictors were chosen if;
 <ul>
@@ -415,230 +415,34 @@ summary {
 <ul>
 <li>Additive model all and backward AIC</li>
 <li>Multiplicative model all and backward AIC</li>
-<li>regsubsets all possible models</li>
+<li>regsubsets all possible models (tried this but it ran for three days and crashed the computer)</li>
 </ul></li>
 </ul></li>
-<li>Problems with our model and methods to improve it.
+<li><p>Problems with our model and methods to improve it.</p>
 <ul>
 <li>RMSE (Cross-Validated RMSE) is too high (355)
 <ul>
 <li>Outliers were removed and improved LOOCV RMSE by 30%.</li>
 <li>Transforming a few predictors with log and higher order terms improved the adjusted-rsquared and LOOCV RMSE.</li>
 <li>Adding some two-way interactions improved the adjusted r-squared and LOOCV RMSE slightly.</li>
+<li>BoxCox recommended a lambda of ~0.8. Transformation of response YPLLRate^lambda worked best (<span class="math inline">\(Y^\lambda\)</span> rather than <span class="math inline">\(\frac{(Y^\lambda - 1)}\lambda\)</span>). It greatly improved LOOCV RMSE. After the transformation of the response, BoxCox was performed again and lambda was very close to one, indicating a good linear fit. This seemed to improve the normality problems with our response variable.</li>
 </ul></li>
 <li>Model suffers from heteroscedasticity (Breusch-Pagan Test) and correlation between residuals (Durbin Watson Test)
 <ul>
-<li>?scale the values of predictors?</li>
-<li>?weight the observations?</li>
-<li>?try a model that does these automatically like glmnet?</li>
+<li>scaled the values of predictors - this did not help</li>
+<li>weighted each observations - this did not help</li>
+<li>Remove predictors one by one with highest p-value if have good or little affect. This improved all measures.</li>
+<li>?try a model that does these automatically like glmnet? - maybe next time</li>
 </ul></li>
-<li>Model is too big.
-<ul>
-<li>Remove predictors one by one with highest p-value if have good or little affect.</li>
-</ul></li>
+<li>Model is too big.</li>
 </ul></li>
 </ul>
-<pre><code>## [1] TRUE</code></pre>
-<pre><code>## [1] &quot;Mean relative difference: 2.83409&quot;</code></pre>
-<pre><code>##       [,1]   [,2]
-## [1,] 14438  55601
-## [2,] 48703 218022
-## [3,]  6779  24881
-## [4,]  5970  22400
-## [5,] 13939  57840
-## [6,]  2719  10138</code></pre>
-<pre><code>## &#39;data.frame&#39;:    3142 obs. of  90 variables:
-##  $ State               : chr  &quot;Alabama&quot; &quot;Alabama&quot; &quot;Alabama&quot; &quot;Alabama&quot; ...
-##  $ Region              : chr  &quot;Autauga&quot; &quot;Baldwin&quot; &quot;Barbour&quot; &quot;Bibb&quot; ...
-##  $ FIPS                : num  1001 1003 1005 1007 1009 ...
-##  $ Deaths              : num  791 2967 472 471 1085 ...
-##  $ YPLLRate            : num  8129 7354 10254 11978 11335 ...
-##  $ HealthPoorPct       : num  20.9 17.5 29.6 19.4 21.7 ...
-##  $ HealthBadDaysPhysAvg: num  4.74 4.22 5.43 4.59 4.86 ...
-##  $ HealthBadDaysMentAvg: num  4.65 4.3 5.19 4.55 4.89 ...
-##  $ LBWPct              : num  8.62 8.35 11.47 10.31 7.6 ...
-##  $ SmokersPct          : num  18.1 17.5 22 19.1 19.2 ...
-##  $ ObeseAdultsPct      : num  33.3 31 41.7 37.6 33.8 37.2 43.3 38.5 40.1 35 ...
-##  $ FoodEnvirIX         : num  7.2 8 5.6 7.8 8.4 4.3 6.6 6.9 6.4 8.3 ...
-##  $ PhysInactPct        : num  34.7 26.5 23.5 33.5 30.3 24.6 39.5 31.7 30.1 31.3 ...
-##  $ ExerAccPct          : num  69.1 73.7 53.2 16.3 15.6 ...
-##  $ DrinkExcPct         : num  15 18 12.8 15.6 14.2 ...
-##  $ DeathsDrinkDrivePct : num  26.8 30.8 40 27.6 19.4 ...
-##  $ ChlamydiaRate       : num  407 325 716 340 234 ...
-##  $ TeenBirthRate       : num  25.3 27.9 40.9 41.7 33.5 ...
-##  $ UninsuredPct        : num  8.72 11.33 12.24 10.21 13.36 ...
-##  $ PhysPrimCareRate    : num  45 72.9 31.7 48.5 22.4 ...
-##  $ DentistRate         : num  32.4 49.5 36.2 22.3 19 ...
-##  $ MentHProvRate       : num  23.38 96.32 8.04 22.32 15.56 ...
-##  $ HospPrevRate        : num  7108 4041 6209 5961 4060 ...
-##  $ MammAnnualPct       : num  41 43 45 40 34 35 42 32 38 36 ...
-##  $ VaccinatedPct       : num  41 44 37 38 39 28 35 38 42 41 ...
-##  $ CohortSize          : num  660 2207 312 271 689 ...
-##  $ HSGradRate          : num  90 86.4 81.4 83.8 93.5 ...
-##  $ Population          : num  14438 48703 6779 5970 13939 ...
-##  $ CollegeSomePct      : num  62 67.4 34.9 44.1 53.4 ...
-##  $ LaborForce          : num  25957 93849 8373 8661 25006 ...
-##  $ UnemployedPct       : num  3.63 3.62 5.17 3.97 3.51 ...
-##  $ ChildInPovertyPct   : num  19.3 13.9 43.9 27.8 18 68.3 36.3 26.5 30.7 24.7 ...
-##  $ Income80thpcntl     : num  110026 111447 76557 87957 91702 ...
-##  $ Income20thpcntl     : num  21019 25227 13475 20134 20699 ...
-##  $ IncomeRatio         : num  5.23 4.42 5.68 4.37 4.43 ...
-##  $ SingsParsHshsldsPct : num  26.2 24.1 56.6 28.7 28.6 ...
-##  $ SocsAssRate         : num  12.07 10.21 7.52 8.38 8.45 ...
-##  $ ViolsCrimeAnlAvg    : num  148.5 408 105.5 19.5 279 ...
-##  $ ViolCrimeRate       : num  272.3 203.7 414.3 89.3 482.7 ...
-##  $ InjuryDeathRate     : num  68.5 72.4 70.3 108.2 107.3 ...
-##  $ DailyPM25Avg        : num  11.7 10.3 11.5 11.2 11.7 11.2 10.6 11.8 11.4 11.4 ...
-##  $ WaterViol           : chr  &quot;No&quot; &quot;No&quot; &quot;No&quot; &quot;No&quot; ...
-##  $ HousSvrProbPct      : num  14.7 13.6 14.6 10.5 10.5 ...
-##  $ HousSvrCostBurden   : num  12.83 12.28 13.45 9.98 7.85 ...
-##  $ HousSvrOvercrowd    : num  1.202 1.271 1.689 0.255 1.891 ...
-##  $ HousInadFacil       : num  1.346 0.479 0.603 0.709 1.091 ...
-##  $ DriveAloneWorkPct   : num  86.5 84.3 83.4 84.9 86.2 ...
-##  $ DriveAloneLongPct   : num  39.6 41.7 32.2 49.8 59.4 46 32.3 31.2 31.8 46.1 ...
-##  $ LifeExpect          : num  76.9 78.5 75.3 73.6 74.1 ...
-##  $ DeathAgeAdjRate     : num  418 353 497 589 516 ...
-##  $ DeathChildRate      : num  55.9 47.4 74.2 85.8 83.8 ...
-##  $ DeathInfantRate     : num  7.94 5.55 NA 12.24 6.84 ...
-##  $ DistressFreqPhysPct : num  13.7 12.5 17.2 13.6 14.5 ...
-##  $ DistressFreqMentPct : num  14.1 13.5 16.6 14 14.9 ...
-##  $ DiabetesAdultPct    : num  11.1 10.7 17.6 14.5 17 23.7 19.2 17.5 19.9 15.2 ...
-##  $ HIVRate             : num  219.1 166.5 420.6 196.8 99.8 ...
-##  $ FoodInsecurePct     : num  13.2 11.6 22 14.3 10.7 24.8 20.6 15.7 17.9 12.5 ...
-##  $ FoodHealthLimAccPct : num  11.99 5.42 10.74 2.6 2.88 ...
-##  $ DeathDrugODRate     : num  10.8 13.6 NA 28.1 24.2 ...
-##  $ DeathMVRate         : num  19.3 15.8 22.9 26 28.7 ...
-##  $ SleepPoorPct        : num  35.9 33.3 38.6 38.1 35.9 ...
-##  $ UninsAdultPct       : num  11.1 14.3 16.1 13 17.1 ...
-##  $ UninsChildPct       : num  2.67 3.54 2.91 2.62 4.08 ...
-##  $ OthPrimCareProvRate : num  39.6 56 52.2 111.6 22.5 ...
-##  $ DisconnYouthPct     : num  NA 8.48 13.34 NA 18.94 ...
-##  $ AvgGradeRead        : num  2.96 3.01 2.66 2.63 3.03 ...
-##  $ AvgGradeMath        : num  2.8 2.86 2.44 2.38 2.85 ...
-##  $ IncHousehldMedian   : num  59338 57588 34382 46064 50412 ...
-##  $ LunchFreeReducedPct : num  43.4 48.5 63.3 61.6 52.9 ...
-##  $ SegIXBlackWhite     : num  24.6 41.3 25 52.6 48.2 ...
-##  $ SegIXnonWhiteWhite  : num  23.6 31.8 23.4 52.6 17.7 ...
-##  $ HomicideRate        : num  4.9 3.01 7.62 8.23 6.43 ...
-##  $ SuicAgeAdjRate      : num  18.1 19.4 12.8 20.9 17.1 ...
-##  $ SuicCrudeRate       : num  19.1 19.8 13.9 20.4 17.3 ...
-##  $ DeathsFireArmsRate  : num  16.2 14.1 17.8 23.9 20.1 ...
-##  $ ArrestJuveNonPet    : num  9 131 0 43834 7 ...
-##  $ ArrestJuvePet       : num  59 440 36 83 40 16 5 243 81 55 ...
-##  $ ArrestJuveDenom     : num  6400 21800 2400 2200 6300 900 2100 11700 3100 2500 ...
-##  $ ArrestJuveRate      : num  10.62 26.19 15 NA 7.46 ...
-##  $ TrafficVolume       : num  88.5 87 102.3 29.3 33.4 ...
-##  $ HomeownersPct       : num  74.9 73.6 61.4 75.1 78.6 ...
-##  $ HousehldSvrCostPct  : num  13.4 11.73 14.06 9.89 8.46 ...
-##  $ Population2         : num  55601 218022 24881 22400 57840 ...
-##  $ PopLT18Pct          : num  23.7 21.6 20.9 20.5 23.2 ...
-##  $ PopGE65Pct          : num  15.6 20.4 19.4 16.5 18.2 ...
-##  $ PopNativePct        : num  0.48 0.772 0.659 0.438 0.654 ...
-##  $ PopPacificPct       : num  0.112 0.067 0.185 0.116 0.121 ...
-##  $ EnglishNotProfPct   : num  0.82 0.544 1.632 0.268 1.725 ...
-##  $ PopFemalePct        : num  51.4 51.5 47.2 46.8 50.7 ...
-##  $ PopRuralPct         : num  42 42.3 67.8 68.4 90 ...</code></pre>
-<pre><code>## &#39;data.frame&#39;:    3142 obs. of  90 variables:
-##  $ State               : Factor w/ 51 levels &quot;Alabama&quot;,&quot;Alaska&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ Region              : Factor w/ 1850 levels &quot;Abbeville&quot;,&quot;Acadia&quot;,..: 82 89 100 149 164 225 235 246 293 315 ...
-##  $ FIPS                : num  1001 1003 1005 1007 1009 ...
-##  $ Deaths              : num  791 2967 472 471 1085 ...
-##  $ YPLLRate            : num  8129 7354 10254 11978 11335 ...
-##  $ HealthPoorPct       : num  20.9 17.5 29.6 19.4 21.7 ...
-##  $ HealthBadDaysPhysAvg: num  4.74 4.22 5.43 4.59 4.86 ...
-##  $ HealthBadDaysMentAvg: num  4.65 4.3 5.19 4.55 4.89 ...
-##  $ LBWPct              : num  8.62 8.35 11.47 10.31 7.6 ...
-##  $ SmokersPct          : num  18.1 17.5 22 19.1 19.2 ...
-##  $ ObeseAdultsPct      : num  33.3 31 41.7 37.6 33.8 37.2 43.3 38.5 40.1 35 ...
-##  $ FoodEnvirIX         : num  7.2 8 5.6 7.8 8.4 4.3 6.6 6.9 6.4 8.3 ...
-##  $ PhysInactPct        : num  34.7 26.5 23.5 33.5 30.3 24.6 39.5 31.7 30.1 31.3 ...
-##  $ ExerAccPct          : num  69.1 73.7 53.2 16.3 15.6 ...
-##  $ DrinkExcPct         : num  15 18 12.8 15.6 14.2 ...
-##  $ DeathsDrinkDrivePct : num  26.8 30.8 40 27.6 19.4 ...
-##  $ ChlamydiaRate       : num  407 325 716 340 234 ...
-##  $ TeenBirthRate       : num  25.3 27.9 40.9 41.7 33.5 ...
-##  $ UninsuredPct        : num  8.72 11.33 12.24 10.21 13.36 ...
-##  $ PhysPrimCareRate    : num  45 72.9 31.7 48.5 22.4 ...
-##  $ DentistRate         : num  32.4 49.5 36.2 22.3 19 ...
-##  $ MentHProvRate       : num  23.38 96.32 8.04 22.32 15.56 ...
-##  $ HospPrevRate        : num  7108 4041 6209 5961 4060 ...
-##  $ MammAnnualPct       : num  41 43 45 40 34 35 42 32 38 36 ...
-##  $ VaccinatedPct       : num  41 44 37 38 39 28 35 38 42 41 ...
-##  $ CohortSize          : num  660 2207 312 271 689 ...
-##  $ HSGradRate          : num  90 86.4 81.4 83.8 93.5 ...
-##  $ Population          : num  14438 48703 6779 5970 13939 ...
-##  $ CollegeSomePct      : num  62 67.4 34.9 44.1 53.4 ...
-##  $ LaborForce          : num  25957 93849 8373 8661 25006 ...
-##  $ UnemployedPct       : num  3.63 3.62 5.17 3.97 3.51 ...
-##  $ ChildInPovertyPct   : num  19.3 13.9 43.9 27.8 18 68.3 36.3 26.5 30.7 24.7 ...
-##  $ Income80thpcntl     : num  110026 111447 76557 87957 91702 ...
-##  $ Income20thpcntl     : num  21019 25227 13475 20134 20699 ...
-##  $ IncomeRatio         : num  5.23 4.42 5.68 4.37 4.43 ...
-##  $ SingsParsHshsldsPct : num  26.2 24.1 56.6 28.7 28.6 ...
-##  $ SocsAssRate         : num  12.07 10.21 7.52 8.38 8.45 ...
-##  $ ViolsCrimeAnlAvg    : num  148.5 408 105.5 19.5 279 ...
-##  $ ViolCrimeRate       : num  272.3 203.7 414.3 89.3 482.7 ...
-##  $ InjuryDeathRate     : num  68.5 72.4 70.3 108.2 107.3 ...
-##  $ DailyPM25Avg        : num  11.7 10.3 11.5 11.2 11.7 11.2 10.6 11.8 11.4 11.4 ...
-##  $ WaterViol           : Factor w/ 2 levels &quot;No&quot;,&quot;Yes&quot;: 1 1 1 1 1 1 2 1 1 1 ...
-##  $ HousSvrProbPct      : num  14.7 13.6 14.6 10.5 10.5 ...
-##  $ HousSvrCostBurden   : num  12.83 12.28 13.45 9.98 7.85 ...
-##  $ HousSvrOvercrowd    : num  1.202 1.271 1.689 0.255 1.891 ...
-##  $ HousInadFacil       : num  1.346 0.479 0.603 0.709 1.091 ...
-##  $ DriveAloneWorkPct   : num  86.5 84.3 83.4 84.9 86.2 ...
-##  $ DriveAloneLongPct   : num  39.6 41.7 32.2 49.8 59.4 46 32.3 31.2 31.8 46.1 ...
-##  $ LifeExpect          : num  76.9 78.5 75.3 73.6 74.1 ...
-##  $ DeathAgeAdjRate     : num  418 353 497 589 516 ...
-##  $ DeathChildRate      : num  55.9 47.4 74.2 85.8 83.8 ...
-##  $ DeathInfantRate     : num  7.94 5.55 NA 12.24 6.84 ...
-##  $ DistressFreqPhysPct : num  13.7 12.5 17.2 13.6 14.5 ...
-##  $ DistressFreqMentPct : num  14.1 13.5 16.6 14 14.9 ...
-##  $ DiabetesAdultPct    : num  11.1 10.7 17.6 14.5 17 23.7 19.2 17.5 19.9 15.2 ...
-##  $ HIVRate             : num  219.1 166.5 420.6 196.8 99.8 ...
-##  $ FoodInsecurePct     : num  13.2 11.6 22 14.3 10.7 24.8 20.6 15.7 17.9 12.5 ...
-##  $ FoodHealthLimAccPct : num  11.99 5.42 10.74 2.6 2.88 ...
-##  $ DeathDrugODRate     : num  10.8 13.6 NA 28.1 24.2 ...
-##  $ DeathMVRate         : num  19.3 15.8 22.9 26 28.7 ...
-##  $ SleepPoorPct        : num  35.9 33.3 38.6 38.1 35.9 ...
-##  $ UninsAdultPct       : num  11.1 14.3 16.1 13 17.1 ...
-##  $ UninsChildPct       : num  2.67 3.54 2.91 2.62 4.08 ...
-##  $ OthPrimCareProvRate : num  39.6 56 52.2 111.6 22.5 ...
-##  $ DisconnYouthPct     : num  NA 8.48 13.34 NA 18.94 ...
-##  $ AvgGradeRead        : num  2.96 3.01 2.66 2.63 3.03 ...
-##  $ AvgGradeMath        : num  2.8 2.86 2.44 2.38 2.85 ...
-##  $ IncHousehldMedian   : num  59338 57588 34382 46064 50412 ...
-##  $ LunchFreeReducedPct : num  43.4 48.5 63.3 61.6 52.9 ...
-##  $ SegIXBlackWhite     : num  24.6 41.3 25 52.6 48.2 ...
-##  $ SegIXnonWhiteWhite  : num  23.6 31.8 23.4 52.6 17.7 ...
-##  $ HomicideRate        : num  4.9 3.01 7.62 8.23 6.43 ...
-##  $ SuicAgeAdjRate      : num  18.1 19.4 12.8 20.9 17.1 ...
-##  $ SuicCrudeRate       : num  19.1 19.8 13.9 20.4 17.3 ...
-##  $ DeathsFireArmsRate  : num  16.2 14.1 17.8 23.9 20.1 ...
-##  $ ArrestJuveNonPet    : num  9 131 0 43834 7 ...
-##  $ ArrestJuvePet       : num  59 440 36 83 40 16 5 243 81 55 ...
-##  $ ArrestJuveDenom     : num  6400 21800 2400 2200 6300 900 2100 11700 3100 2500 ...
-##  $ ArrestJuveRate      : num  10.62 26.19 15 NA 7.46 ...
-##  $ TrafficVolume       : num  88.5 87 102.3 29.3 33.4 ...
-##  $ HomeownersPct       : num  74.9 73.6 61.4 75.1 78.6 ...
-##  $ HousehldSvrCostPct  : num  13.4 11.73 14.06 9.89 8.46 ...
-##  $ Population2         : num  55601 218022 24881 22400 57840 ...
-##  $ PopLT18Pct          : num  23.7 21.6 20.9 20.5 23.2 ...
-##  $ PopGE65Pct          : num  15.6 20.4 19.4 16.5 18.2 ...
-##  $ PopNativePct        : num  0.48 0.772 0.659 0.438 0.654 ...
-##  $ PopPacificPct       : num  0.112 0.067 0.185 0.116 0.121 ...
-##  $ EnglishNotProfPct   : num  0.82 0.544 1.632 0.268 1.725 ...
-##  $ PopFemalePct        : num  51.4 51.5 47.2 46.8 50.7 ...
-##  $ PopRuralPct         : num  42 42.3 67.8 68.4 90 ...</code></pre>
 <pre><code>## State, Region, FIPS, Deaths, YPLLRate, HealthPoorPct, HealthBadDaysPhysAvg, HealthBadDaysMentAvg, LBWPct, SmokersPct, ObeseAdultsPct, FoodEnvirIX, PhysInactPct, ExerAccPct, DrinkExcPct, DeathsDrinkDrivePct, ChlamydiaRate, TeenBirthRate, UninsuredPct, PhysPrimCareRate, DentistRate, MentHProvRate, HospPrevRate, MammAnnualPct, VaccinatedPct, HSGradRate, Population, CollegeSomePct, LaborForce, UnemployedPct, ChildInPovertyPct, Income80thpcntl, Income20thpcntl, IncomeRatio, SingsParsHshsldsPct, SocsAssRate, ViolsCrimeAnlAvg, ViolCrimeRate, InjuryDeathRate, DailyPM25Avg, WaterViol, HousSvrProbPct, HousSvrCostBurden, HousSvrOvercrowd, HousInadFacil, DriveAloneWorkPct, DriveAloneLongPct, LifeExpect, DeathAgeAdjRate, DistressFreqPhysPct, DistressFreqMentPct, DiabetesAdultPct, FoodInsecurePct, FoodHealthLimAccPct, SleepPoorPct, UninsAdultPct, UninsChildPct, OthPrimCareProvRate, IncHousehldMedian, LunchFreeReducedPct, TrafficVolume, HomeownersPct, HousehldSvrCostPct, Population2, PopLT18Pct, PopGE65Pct, PopNativePct, PopPacificPct, EnglishNotProfPct, PopFemalePct, PopRuralPct,</code></pre>
 <pre><code>## 71 data elements have NA counts below the threshhold of  294</code></pre>
-<pre><code>## [1] 90</code></pre>
-<pre><code>## [1] 3142</code></pre>
-<pre><code>## [1] 21510</code></pre>
-<pre><code>## [1] 0.0760662</code></pre>
-<pre><code>## [1] 0</code></pre>
-<pre><code>## [1] 0</code></pre>
-<pre><code>## [1] 71</code></pre>
-<pre><code>## [1] 2333</code></pre>
+<pre><code>## Raw95: Has  90  columns and  3142  rows.</code></pre>
+<pre><code>## Raw95: Has  21510  NA at rate  0.0760661998726926</code></pre>
+<pre><code>## Raw95naomit: Dropped high na columns, omitted rows with NA, have  71  columns and  2333  rows.</code></pre>
+<pre><code>## Raw95naomit: Has  0  NA at rate  0</code></pre>
 </div>
 <div id="modeling-the-data-part1-things-that-were-tried" class="section level2">
 <h2>Modeling the Data (Part1): Things that were tried:</h2>
@@ -646,16 +450,6 @@ summary {
 <li>Additive model predictors with highest correlation to response (<em>mdlhicorr1</em>).</li>
 <li>Drop one by one those with highest p-values (<em>mdlhicorr2</em>).</li>
 </ul>
-<pre><code>## [1] 0.9556921</code></pre>
-<pre><code>## [1] 503.8892</code></pre>
-<pre><code>## YPLLRate ~ ChlamydiaRate + CollegeSomePct + DeathAgeAdjRate + 
-##     DistressFreqMentPct + DriveAloneWorkPct + FIPS + HealthBadDaysMentAvg + 
-##     HospPrevRate + Income20thpcntl + IncomeRatio + InjuryDeathRate + 
-##     LBWPct + LifeExpect + MammAnnualPct + PhysInactPct + PhysPrimCareRate + 
-##     PopGE65Pct + PopRuralPct + SingsParsHshsldsPct + SmokersPct + 
-##     UnemployedPct + UninsAdultPct + VaccinatedPct</code></pre>
-<pre><code>## [1] 0.9562047</code></pre>
-<pre><code>## [1] 501.5361</code></pre>
 <p><strong>Additive Model with all high correlation data elements (mdlhicorr1):</strong></p>
 <pre class="r"><code>formula(mdlhicorr1)</code></pre>
 <pre><code>## YPLLRate ~ ChlamydiaRate + CollegeSomePct + DeathAgeAdjRate + 
@@ -692,6 +486,75 @@ summary {
 <li>Durbin-Watson: 1.8404433, Durbin-Watson test, true autocorrelation is greater than 0, 3.569833910^{-5}, mdlhicorr2</li>
 <li>bptest: 432.0908465, 20, studentized Breusch-Pagan test, 4.387292710^{-79}, mdlhicorr2</li>
 </ul>
+<p><strong>Additive all (mdl3):</strong></p>
+<pre class="r"><code>formula(mdl3)</code></pre>
+<pre><code>## YPLLRate ~ State + Region + FIPS + Deaths + HealthPoorPct + HealthBadDaysPhysAvg + 
+##     HealthBadDaysMentAvg + LBWPct + SmokersPct + ObeseAdultsPct + 
+##     FoodEnvirIX + PhysInactPct + ExerAccPct + DrinkExcPct + DeathsDrinkDrivePct + 
+##     ChlamydiaRate + TeenBirthRate + UninsuredPct + PhysPrimCareRate + 
+##     DentistRate + MentHProvRate + HospPrevRate + MammAnnualPct + 
+##     VaccinatedPct + HSGradRate + Population + CollegeSomePct + 
+##     LaborForce + UnemployedPct + ChildInPovertyPct + Income80thpcntl + 
+##     Income20thpcntl + IncomeRatio + SingsParsHshsldsPct + SocsAssRate + 
+##     ViolsCrimeAnlAvg + ViolCrimeRate + InjuryDeathRate + DailyPM25Avg + 
+##     WaterViol + HousSvrProbPct + HousSvrCostBurden + HousSvrOvercrowd + 
+##     HousInadFacil + DriveAloneWorkPct + DriveAloneLongPct + LifeExpect + 
+##     DeathAgeAdjRate + DistressFreqPhysPct + DistressFreqMentPct + 
+##     DiabetesAdultPct + FoodInsecurePct + FoodHealthLimAccPct + 
+##     SleepPoorPct + UninsAdultPct + UninsChildPct + OthPrimCareProvRate + 
+##     IncHousehldMedian + LunchFreeReducedPct + TrafficVolume + 
+##     HomeownersPct + HousehldSvrCostPct + Population2 + PopLT18Pct + 
+##     PopGE65Pct + PopNativePct + PopPacificPct + EnglishNotProfPct + 
+##     PopFemalePct + PopRuralPct</code></pre>
+<ul>
+<li>adjusted-Rsquared: 0.9611707</li>
+<li>loocv-RMSE: </li>
+<li>number of coef: 1564(Note: State adds 51, Region would add 3142)</li>
+<li>Shapiro: 0.8287729, 1.575254910^{-44}, Shapiro-Wilk normality test, resid(mdl3)</li>
+<li>Durbin-Watson: 2.0325457, Durbin-Watson test, true autocorrelation is greater than 0, 0.470823, mdl3</li>
+<li>bptest: 1068.3827659, 1563, studentized Breusch-Pagan test, 1, mdl3</li>
+</ul>
+<p><strong>Additive all, back AIC (mdl4):</strong></p>
+<pre class="r"><code>formula(mdl4)</code></pre>
+<pre><code>## YPLLRate ~ State + HealthBadDaysMentAvg + LBWPct + FoodEnvirIX + 
+##     PhysInactPct + DeathsDrinkDrivePct + ChlamydiaRate + UninsuredPct + 
+##     PhysPrimCareRate + HospPrevRate + MammAnnualPct + VaccinatedPct + 
+##     Population + CollegeSomePct + Income20thpcntl + IncomeRatio + 
+##     SocsAssRate + InjuryDeathRate + DailyPM25Avg + HousSvrProbPct + 
+##     HousSvrCostBurden + HousSvrOvercrowd + HousInadFacil + DriveAloneWorkPct + 
+##     DriveAloneLongPct + LifeExpect + DeathAgeAdjRate + DistressFreqMentPct + 
+##     UninsAdultPct + IncHousehldMedian + Population2 + PopGE65Pct + 
+##     PopNativePct + PopPacificPct + EnglishNotProfPct + PopFemalePct + 
+##     PopRuralPct</code></pre>
+<ul>
+<li>adjusted-Rsquared: 0.9632989</li>
+<li>loocv-RMSE: 464.8485936</li>
+<li>number of coef: 81(Note: State adds 51, Region would add 3142)</li>
+<li>Shapiro: 0.9780353, 1.704268110^{-18}, Shapiro-Wilk normality test, resid(mdl4)</li>
+<li>Durbin-Watson: 2.040922, Durbin-Watson test, true autocorrelation is greater than 0, 0.5360836, mdl4</li>
+<li>bptest: 412.1847091, 80, studentized Breusch-Pagan test, 3.346291310^{-46}, mdl4</li>
+</ul>
+<p><strong>Additive all, back AIC, remove high pval (mdl5):</strong></p>
+<pre class="r"><code>formula(mdl5)</code></pre>
+<pre><code>## YPLLRate ~ State + HealthBadDaysMentAvg + LBWPct + LBWPct + FoodEnvirIX + 
+##     PhysInactPct + DeathsDrinkDrivePct + ChlamydiaRate + log(UninsuredPct) + 
+##     I(PhysPrimCareRate^2) + I(HospPrevRate^2) + MammAnnualPct + 
+##     VaccinatedPct + Population + CollegeSomePct + Income20thpcntl + 
+##     IncomeRatio + SocsAssRate + InjuryDeathRate + DailyPM25Avg + 
+##     HousSvrProbPct + HousSvrCostBurden + HousSvrOvercrowd + HousInadFacil + 
+##     DriveAloneWorkPct + DriveAloneLongPct + LifeExpect + DeathAgeAdjRate + 
+##     DistressFreqMentPct + log(UninsAdultPct) + I(IncHousehldMedian^2) + 
+##     Population2 + PopGE65Pct + PopNativePct + PopPacificPct + 
+##     EnglishNotProfPct + PopFemalePct + PopRuralPct + PopGE65Pct:DeathAgeAdjRate + 
+##     PopFemalePct:DistressFreqPhysPct</code></pre>
+<ul>
+<li>adjusted-Rsquared: 0.9638106</li>
+<li>loocv-RMSE: 461.6131412</li>
+<li>number of coef: 83(Note: State adds 51, Region would add 3142)</li>
+<li>Shapiro: 0.9789549, 4.441306810^{-18}, Shapiro-Wilk normality test, resid(mdl5)</li>
+<li>Durbin-Watson: 2.041566, Durbin-Watson test, true autocorrelation is greater than 0, 0.5428095, mdl5</li>
+<li>bptest: 439.8338894, 82, studentized Breusch-Pagan test, 2.27323610^{-50}, mdl5</li>
+</ul>
 </div>
 <div id="modeling-the-data-part-2-things-that-were-tried" class="section level2">
 <h2>Modeling the Data (Part 2): Things that were tried:</h2>
@@ -700,272 +563,110 @@ summary {
 <li>Transformed some predictors (log and higher order) improving adjusted rsquared and LOOCV RMSE slightly</li>
 <li>Added interaction terms that improved adjusted rsquared and LOOCV RMSE</li>
 </ul>
-<pre><code>## [1] 0.9638106</code></pre>
-<pre><code>## [1] 461.6131</code></pre>
 <pre><code>## [1] 160</code></pre>
-<pre><code>## [1] 0.9753082</code></pre>
-<pre><code>## [1] 357.6242</code></pre>
-<pre><code>## [1] 0.9638106</code></pre>
-<pre><code>## [1] Inf</code></pre>
-<pre><code>## [1] 0.9738314</code></pre>
-<pre><code>## [1] 357.4303</code></pre>
-<pre><code>## [1] 160</code></pre>
-<pre><code>## [1] 0.9753082</code></pre>
-<pre><code>## [1] 357.6242</code></pre>
-<pre><code>## [1] 0.9756216</code></pre>
-<pre><code>## [1] 355.8301</code></pre>
+<pre><code>## Influential observations: there were  160  observations that were influential to model 6. Removing them dropped RMSE significantly.</code></pre>
+<pre><code>## 
+## Attaching package: &#39;MASS&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:dplyr&#39;:
+## 
+##     select</code></pre>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABUAAAAPACAMAAADDuCPrAAAA2FBMVEUAAAAAADoAAGYAOjoAOmYAOpAAZrY6AAA6OgA6Ojo6OmY6OpA6ZmY6ZpA6ZrY6kLY6kNtmAABmAGZmOgBmOjpmOpBmZjpmZmZmZpBmZrZmkLZmkNtmtttmtv+QOgCQOjqQZjqQZmaQZpCQkDqQkGaQkJCQkLaQtraQttuQtv+Q2/+2ZgC2Zjq2kDq2kGa2kJC2tpC2tra2ttu227a229u22/+2///bkDrbkGbbtmbbtpDbtrbb27bb29vb2//b/9vb////tmb/25D/27b/29v//7b//9v///8nbr7qAAAACXBIWXMAAB2HAAAdhwGP5fFlAAAgAElEQVR4nO3da2PT5rqgYaelTWE23TAwzdpdlKFz2O1qWEzTKc2ihQ6BYv//fzSW7SRO4jjWYx3eR7quD00hRJbsV3ck6+DJDICQSd8zAJCVgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIAC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" width="672" /><img src="data:image/png;base64,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" width="672" /></p>
 <pre><code>## 
 ## Call:
-## lm(formula = YPLLRate ~ State + FIPS + HealthPoorPct + HealthBadDaysMentAvg + 
-##     ObeseAdultsPct + FoodEnvirIX + PhysInactPct + DeathsDrinkDrivePct + 
-##     ChlamydiaRate + TeenBirthRate + log(UninsuredPct) + PhysPrimCareRate + 
-##     HospPrevRate + MammAnnualPct + VaccinatedPct + Population + 
-##     CollegeSomePct + Income20thpcntl + IncomeRatio + SocsAssRate + 
-##     ViolCrimeRate + InjuryDeathRate + DailyPM25Avg + HousSvrProbPct + 
-##     HousSvrCostBurden + HousSvrOvercrowd + HousInadFacil + LifeExpect + 
-##     DeathAgeAdjRate + FoodHealthLimAccPct + log(UninsAdultPct) + 
-##     IncHousehldMedian + Population2 + PopGE65Pct + PopNativePct + 
-##     PopPacificPct + EnglishNotProfPct + PopRuralPct + PopGE65Pct:DeathAgeAdjRate + 
-##     HealthPoorPct:PopLT18Pct + HealthPoorPct:PopFemalePct + HealthBadDaysMentAvg:DeathAgeAdjRate + 
+## lm(formula = YPLLRate^lmda ~ HealthPoorPct + FoodEnvirIX + PhysInactPct + 
+##     PhysPrimCareRate + MammAnnualPct + Income20thpcntl + IncomeRatio + 
+##     SocsAssRate + InjuryDeathRate + HousSvrProbPct + HousInadFacil + 
+##     LifeExpect + DeathAgeAdjRate + VaccinatedPct + IncHousehldMedian + 
+##     PopGE65Pct + PopNativePct + PopPacificPct + EnglishNotProfPct + 
+##     PopRuralPct + PopGE65Pct:DeathAgeAdjRate + HealthPoorPct:PopFemalePct + 
 ##     LBWPct:IncHousehldMedian, data = Raw95naomit, subset = cdnaomit &lt;= 
 ##     4/length(cdnaomit))
 ## 
 ## Residuals:
-##     Min      1Q  Median      3Q     Max 
-## -985.67 -221.95   -6.86  207.59 1081.49 
-## 
-## Coefficients:
-##                                        Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)                           1.890e+04  1.533e+03  12.333  &lt; 2e-16 ***
-## StateArizona                         -4.586e+01  3.777e+02  -0.121 0.903384    
-## StateArkansas                         5.673e+00  4.653e+02   0.012 0.990274    
-## StateCalifornia                      -2.313e+02  5.832e+02  -0.397 0.691671    
-## StateColorado                         6.504e+01  8.122e+02   0.080 0.936178    
-## StateConnecticut                     -1.900e+02  9.288e+02  -0.205 0.837945    
-## StateFlorida                         -1.760e+01  1.266e+03  -0.014 0.988908    
-## StateGeorgia                         -1.506e+02  1.389e+03  -0.108 0.913718    
-## StateIdaho                            1.950e+02  1.724e+03   0.113 0.909980    
-## StateIllinois                         2.929e+02  1.843e+03   0.159 0.873727    
-## StateIndiana                          4.731e+02  1.953e+03   0.242 0.808648    
-## StateIowa                             1.377e+02  2.072e+03   0.066 0.947024    
-## StateKansas                           1.302e+02  2.185e+03   0.060 0.952483    
-## StateKentucky                         3.659e+02  2.299e+03   0.159 0.873576    
-## StateLouisiana                        4.294e+02  2.411e+03   0.178 0.858634    
-## StateMaine                            8.771e+01  2.523e+03   0.035 0.972266    
-## StateMaryland                         4.960e+02  2.638e+03   0.188 0.850880    
-## StateMichigan                         4.101e+02  2.872e+03   0.143 0.886466    
-## StateMinnesota                        5.106e+02  2.989e+03   0.171 0.864369    
-## StateMississippi                      5.156e+02  3.099e+03   0.166 0.867874    
-## StateMissouri                         4.125e+02  3.217e+03   0.128 0.897989    
-## StateMontana                          5.080e+02  3.329e+03   0.153 0.878736    
-## StateNebraska                         2.261e+02  3.447e+03   0.066 0.947706    
-## StateNevada                          -9.996e+01  3.562e+03  -0.028 0.977616    
-## StateNew Hampshire                    4.886e+02  3.668e+03   0.133 0.894042    
-## StateNew Jersey                       5.639e+02  3.780e+03   0.149 0.881419    
-## StateNew Mexico                       6.320e+02  3.897e+03   0.162 0.871174    
-## StateNew York                         7.763e+02  4.016e+03   0.193 0.846732    
-## StateNorth Carolina                   5.348e+02  4.134e+03   0.129 0.897071    
-## StateNorth Dakota                     9.140e+02  4.246e+03   0.215 0.829575    
-## StateOhio                             9.215e+02  4.361e+03   0.211 0.832668    
-## StateOklahoma                         9.225e+01  4.475e+03   0.021 0.983556    
-## StateOregon                           6.069e+02  4.587e+03   0.132 0.894741    
-## StatePennsylvania                     1.025e+03  4.703e+03   0.218 0.827560    
-## StateRhode Island                     6.154e+02  4.928e+03   0.125 0.900642    
-## StateSouth Carolina                   9.091e+02  5.045e+03   0.180 0.857021    
-## StateSouth Dakota                     8.959e+02  5.166e+03   0.173 0.862322    
-## StateTexas                            4.926e+02  5.413e+03   0.091 0.927495    
-## StateUtah                             9.391e+02  5.504e+03   0.171 0.864547    
-## StateVermont                          1.106e+03  5.617e+03   0.197 0.843965    
-## StateVirginia                         8.624e+02  5.739e+03   0.150 0.880576    
-## StateWashington                       8.010e+02  5.963e+03   0.134 0.893154    
-## StateWest Virginia                    1.320e+03  6.076e+03   0.217 0.828051    
-## StateWisconsin                        9.588e+02  6.196e+03   0.155 0.877048    
-## StateWyoming                          6.964e+02  6.306e+03   0.110 0.912069    
-## FIPS                                 -2.218e-02  1.147e-01  -0.193 0.846660    
-## HealthPoorPct                        -4.084e+01  1.433e+01  -2.851 0.004404 ** 
-## HealthBadDaysMentAvg                 -2.769e+02  9.073e+01  -3.052 0.002301 ** 
-## ObeseAdultsPct                       -3.489e+00  2.209e+00  -1.579 0.114406    
-## FoodEnvirIX                          -2.162e+02  3.151e+01  -6.860 9.01e-12 ***
-## PhysInactPct                         -8.979e+00  2.371e+00  -3.787 0.000157 ***
-## DeathsDrinkDrivePct                   1.212e+00  7.012e-01   1.728 0.084112 .  
-## ChlamydiaRate                         1.830e-01  6.843e-02   2.675 0.007536 ** 
-## TeenBirthRate                        -3.449e+00  1.451e+00  -2.376 0.017574 *  
-## log(UninsuredPct)                     8.007e+02  4.095e+02   1.955 0.050667 .  
-## PhysPrimCareRate                     -1.445e+00  3.193e-01  -4.525 6.39e-06 ***
-## HospPrevRate                         -1.054e-02  6.372e-03  -1.653 0.098436 .  
-## MammAnnualPct                         5.889e+00  1.835e+00   3.209 0.001350 ** 
-## VaccinatedPct                         4.122e+00  1.280e+00   3.220 0.001303 ** 
-## Population                           -2.125e-03  1.030e-03  -2.063 0.039203 *  
-## CollegeSomePct                        3.363e+00  1.566e+00   2.148 0.031821 *  
-## Income20thpcntl                       4.362e-02  6.187e-03   7.051 2.40e-12 ***
-## IncomeRatio                           9.754e+01  2.660e+01   3.667 0.000251 ***
-## SocsAssRate                          -1.208e+01  2.305e+00  -5.241 1.76e-07 ***
-## ViolCrimeRate                         1.578e-01  6.260e-02   2.520 0.011801 *  
-## InjuryDeathRate                       1.050e+01  6.749e-01  15.564  &lt; 2e-16 ***
-## DailyPM25Avg                         -1.814e+01  8.641e+00  -2.100 0.035868 *  
-## HousSvrProbPct                        6.263e+01  2.301e+01   2.722 0.006548 ** 
-## HousSvrCostBurden                    -4.792e+01  2.178e+01  -2.200 0.027908 *  
-## HousSvrOvercrowd                     -3.741e+01  2.143e+01  -1.745 0.081082 .  
-## HousInadFacil                        -6.748e+01  1.980e+01  -3.409 0.000665 ***
-## LifeExpect                           -2.164e+02  1.536e+01 -14.086  &lt; 2e-16 ***
-## DeathAgeAdjRate                       1.177e+01  1.028e+00  11.450  &lt; 2e-16 ***
-## FoodHealthLimAccPct                  -1.574e+01  3.547e+00  -4.437 9.58e-06 ***
-## log(UninsAdultPct)                   -5.801e+02  4.221e+02  -1.374 0.169526    
-## IncHousehldMedian                    -1.483e-02  2.892e-03  -5.127 3.22e-07 ***
-## Population2                           6.104e-04  2.988e-04   2.043 0.041227 *  
-## PopGE65Pct                            2.470e+01  8.407e+00   2.938 0.003335 ** 
-## PopNativePct                          2.810e+01  2.489e+00  11.288  &lt; 2e-16 ***
-## PopPacificPct                        -1.308e+02  4.597e+01  -2.845 0.004484 ** 
-## EnglishNotProfPct                     2.751e+01  6.843e+00   4.020 6.02e-05 ***
-## PopRuralPct                           2.201e+00  5.652e-01   3.895 0.000101 ***
-## DeathAgeAdjRate:PopGE65Pct            8.334e-02  2.115e-02   3.941 8.38e-05 ***
-## HealthPoorPct:PopLT18Pct              7.910e-01  3.404e-01   2.324 0.020241 *  
-## HealthPoorPct:PopFemalePct            7.756e-01  3.353e-01   2.313 0.020802 *  
-## HealthBadDaysMentAvg:DeathAgeAdjRate  3.266e-01  1.705e-01   1.915 0.055593 .  
-## IncHousehldMedian:LBWPct              1.125e-03  1.601e-04   7.026 2.86e-12 ***
-## ---
-## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
-## 
-## Residual standard error: 349.5 on 2086 degrees of freedom
-## Multiple R-squared:  0.9766, Adjusted R-squared:  0.9756 
-## F-statistic:  1012 on 86 and 2086 DF,  p-value: &lt; 2.2e-16</code></pre>
-<pre><code>## [1] 125</code></pre>
-<pre><code>## [1] 0.975242</code></pre>
-<pre><code>## [1] 357.3816</code></pre>
-<pre><code>## [1] 72</code></pre>
-<pre><code>## 
-## Call:
-## lm(formula = YPLLRate ~ State + HealthPoorPct + HealthBadDaysMentAvg + 
-##     FoodEnvirIX + PhysInactPct + PhysPrimCareRate + MammAnnualPct + 
-##     VaccinatedPct + CollegeSomePct + Income20thpcntl + IncomeRatio + 
-##     SocsAssRate + InjuryDeathRate + HousSvrProbPct + HousInadFacil + 
-##     LifeExpect + DeathAgeAdjRate + FoodHealthLimAccPct + log(UninsAdultPct) + 
-##     IncHousehldMedian + PopGE65Pct + PopNativePct + PopPacificPct + 
-##     EnglishNotProfPct + PopRuralPct + PopGE65Pct:DeathAgeAdjRate + 
-##     HealthPoorPct:PopFemalePct + LBWPct:IncHousehldMedian, data = Raw95naomit, 
-##     subset = cdnaomit &lt;= 4/length(cdnaomit))
-## 
-## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -1023.69  -224.02    -2.69   212.65  1068.64 
+## -171.494  -32.643   -0.293   32.013  166.202 
 ## 
 ## Coefficients:
 ##                              Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)                 1.678e+04  1.338e+03  12.543  &lt; 2e-16 ***
-## StateArizona                6.115e+01  1.551e+02   0.394 0.693439    
-## StateArkansas              -1.652e+01  7.412e+01  -0.223 0.823638    
-## StateCalifornia            -2.694e+02  1.032e+02  -2.609 0.009140 ** 
-## StateColorado               5.847e+01  9.580e+01   0.610 0.541712    
-## StateConnecticut           -2.251e+02  1.668e+02  -1.350 0.177234    
-## StateFlorida               -1.681e+02  7.571e+01  -2.221 0.026464 *  
-## StateGeorgia               -4.302e+02  7.385e+01  -5.826 6.57e-09 ***
-## StateIdaho                 -7.913e+01  9.643e+01  -0.821 0.411952    
-## StateIllinois              -4.341e+01  8.126e+01  -0.534 0.593278    
-## StateIndiana                1.522e+02  7.196e+01   2.115 0.034555 *  
-## StateIowa                  -1.488e+02  9.519e+01  -1.563 0.118203    
-## StateKansas                -2.291e+02  8.707e+01  -2.631 0.008564 ** 
-## StateKentucky              -4.331e+01  7.537e+01  -0.575 0.565600    
-## StateLouisiana              4.416e+01  7.116e+01   0.621 0.534920    
-## StateMaine                 -3.260e+02  1.183e+02  -2.755 0.005916 ** 
-## StateMaryland               7.283e+01  1.043e+02   0.698 0.485232    
-## StateMichigan              -3.862e+01  8.402e+01  -0.460 0.645777    
-## StateMinnesota              7.897e+01  1.075e+02   0.735 0.462479    
-## StateMississippi           -1.199e+02  9.213e+01  -1.302 0.193190    
-## StateMissouri              -1.622e+02  6.442e+01  -2.517 0.011896 *  
-## StateMontana                2.877e+01  1.100e+02   0.262 0.793625    
-## StateNebraska              -3.325e+02  9.616e+01  -3.457 0.000556 ***
-## StateNevada                -6.261e+02  1.498e+02  -4.179 3.05e-05 ***
-## StateNew Hampshire         -1.441e+02  1.429e+02  -1.008 0.313392    
-## StateNew Jersey            -1.403e+02  1.040e+02  -1.349 0.177581    
-## StateNew Mexico             2.939e+01  1.080e+02   0.272 0.785580    
-## StateNew York               9.015e+01  9.431e+01   0.956 0.339239    
-## StateNorth Carolina        -2.612e+02  6.998e+01  -3.733 0.000195 ***
-## StateNorth Dakota           3.283e+02  1.618e+02   2.029 0.042569 *  
-## StateOhio                   1.552e+02  7.686e+01   2.019 0.043567 *  
-## StateOklahoma              -7.220e+02  7.917e+01  -9.120  &lt; 2e-16 ***
-## StateOregon                -1.914e+02  9.935e+01  -1.926 0.054199 .  
-## StatePennsylvania           2.055e+02  8.472e+01   2.426 0.015367 *  
-## StateRhode Island          -2.290e+02  1.835e+02  -1.248 0.212155    
-## StateSouth Carolina         1.106e+01  7.529e+01   0.147 0.883272    
-## StateSouth Dakota           4.994e+01  1.292e+02   0.386 0.699220    
-## StateTexas                 -4.997e+02  7.330e+01  -6.817 1.21e-11 ***
-## StateUtah                   4.891e+01  1.114e+02   0.439 0.660557    
-## StateVermont                8.477e+01  1.369e+02   0.619 0.535918    
-## StateVirginia              -2.037e+02  7.236e+01  -2.815 0.004919 ** 
-## StateWashington            -2.703e+02  9.658e+01  -2.799 0.005169 ** 
-## StateWest Virginia          1.560e+02  8.655e+01   1.803 0.071531 .  
-## StateWisconsin             -8.506e+01  9.347e+01  -0.910 0.362922    
-## StateWyoming               -3.634e+02  1.097e+02  -3.312 0.000944 ***
-## HealthPoorPct              -4.851e+01  1.413e+01  -3.433 0.000608 ***
-## HealthBadDaysMentAvg       -1.758e+02  5.535e+01  -3.177 0.001511 ** 
-## FoodEnvirIX                -2.353e+02  2.759e+01  -8.528  &lt; 2e-16 ***
-## PhysInactPct               -1.138e+01  2.297e+00  -4.953 7.90e-07 ***
-## PhysPrimCareRate           -1.162e+00  3.155e-01  -3.682 0.000237 ***
-## MammAnnualPct               6.637e+00  1.801e+00   3.686 0.000234 ***
-## VaccinatedPct               3.935e+00  1.268e+00   3.103 0.001940 ** 
-## CollegeSomePct              4.318e+00  1.505e+00   2.869 0.004154 ** 
-## Income20thpcntl             4.849e-02  6.028e-03   8.045 1.43e-15 ***
-## IncomeRatio                 1.031e+02  2.617e+01   3.938 8.48e-05 ***
-## SocsAssRate                -1.189e+01  2.288e+00  -5.195 2.25e-07 ***
-## InjuryDeathRate             1.103e+01  6.687e-01  16.499  &lt; 2e-16 ***
-## HousSvrProbPct              1.759e+01  3.939e+00   4.466 8.39e-06 ***
-## HousInadFacil              -3.513e+01  1.205e+01  -2.916 0.003580 ** 
-## LifeExpect                 -2.058e+02  1.473e+01 -13.969  &lt; 2e-16 ***
-## DeathAgeAdjRate             1.369e+01  5.531e-01  24.747  &lt; 2e-16 ***
-## FoodHealthLimAccPct        -1.635e+01  3.205e+00  -5.102 3.66e-07 ***
-## log(UninsAdultPct)          2.559e+02  6.748e+01   3.792 0.000154 ***
-## IncHousehldMedian          -1.509e-02  2.804e-03  -5.382 8.19e-08 ***
-## PopGE65Pct                  2.847e+01  8.285e+00   3.436 0.000602 ***
-## PopNativePct                2.915e+01  2.320e+00  12.568  &lt; 2e-16 ***
-## PopPacificPct              -1.280e+02  4.592e+01  -2.788 0.005347 ** 
-## EnglishNotProfPct           2.661e+01  6.356e+00   4.187 2.95e-05 ***
-## PopRuralPct                 2.509e+00  4.841e-01   5.183 2.40e-07 ***
-## DeathAgeAdjRate:PopGE65Pct  5.964e-02  2.007e-02   2.971 0.002997 ** 
-## HealthPoorPct:PopFemalePct  1.341e+00  2.635e-01   5.092 3.86e-07 ***
-## IncHousehldMedian:LBWPct    1.169e-03  1.538e-04   7.602 4.37e-14 ***
+## (Intercept)                 2.732e+03  1.666e+02  16.399  &lt; 2e-16 ***
+## HealthPoorPct              -8.800e+00  1.736e+00  -5.069 4.35e-07 ***
+## FoodEnvirIX                -1.310e+01  2.005e+00  -6.531 8.12e-11 ***
+## PhysInactPct               -1.548e+00  2.911e-01  -5.319 1.15e-07 ***
+## PhysPrimCareRate           -1.219e-01  4.187e-02  -2.912 0.003630 ** 
+## MammAnnualPct               1.121e+00  2.160e-01   5.190 2.30e-07 ***
+## Income20thpcntl             6.209e-03  7.873e-04   7.887 4.88e-15 ***
+## IncomeRatio                 1.168e+01  3.219e+00   3.628 0.000293 ***
+## SocsAssRate                -1.238e+00  2.832e-01  -4.370 1.30e-05 ***
+## InjuryDeathRate             1.534e+00  8.226e-02  18.644  &lt; 2e-16 ***
+## HousSvrProbPct              2.495e+00  4.238e-01   5.887 4.54e-09 ***
+## HousInadFacil              -4.389e+00  1.592e+00  -2.757 0.005875 ** 
+## LifeExpect                 -3.040e+01  1.915e+00 -15.875  &lt; 2e-16 ***
+## DeathAgeAdjRate             1.619e+00  7.411e-02  21.846  &lt; 2e-16 ***
+## VaccinatedPct               3.764e-01  1.602e-01   2.350 0.018874 *  
+## IncHousehldMedian          -3.375e-03  3.618e-04  -9.328  &lt; 2e-16 ***
+## PopGE65Pct                  3.019e+00  1.089e+00   2.773 0.005605 ** 
+## PopNativePct                3.308e+00  2.599e-01  12.728  &lt; 2e-16 ***
+## PopPacificPct              -2.386e+01  5.886e+00  -4.054 5.22e-05 ***
+## EnglishNotProfPct           2.646e+00  6.233e-01   4.246 2.27e-05 ***
+## PopRuralPct                 2.674e-01  5.783e-02   4.624 3.99e-06 ***
+## DeathAgeAdjRate:PopGE65Pct  7.690e-03  2.691e-03   2.857 0.004314 ** 
+## HealthPoorPct:PopFemalePct  1.991e-01  3.227e-02   6.169 8.17e-10 ***
+## IncHousehldMedian:LBWPct    2.391e-04  1.725e-05  13.857  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 352.2 on 2101 degrees of freedom
-## Multiple R-squared:  0.9761, Adjusted R-squared:  0.9752 
-## F-statistic:  1206 on 71 and 2101 DF,  p-value: &lt; 2.2e-16</code></pre>
-<pre><code>## 
-##  Durbin-Watson test
-## 
-## data:  mdl8
-## DW = 2.0331, p-value = 0.4409
-## alternative hypothesis: true autocorrelation is greater than 0</code></pre>
-<pre><code>## 
-##  studentized Breusch-Pagan test
-## 
-## data:  mdl8
-## BP = 240.13, df = 71, p-value &lt; 2.2e-16</code></pre>
-<pre><code>## 
-##  Durbin-Watson test
-## 
-## data:  mdl8
-## DW = 2.0331, p-value = 0.4409
-## alternative hypothesis: true autocorrelation is greater than 0</code></pre>
-<pre><code>## 
-##  Shapiro-Wilk normality test
-## 
-## data:  resid(mdl8)
-## W = 0.9969, p-value = 0.0002205</code></pre>
-<pre><code>## [1] 0.9693565</code></pre>
-<pre><code>## [1] 0.1669574</code></pre>
-<pre><code>## [1] 28</code></pre>
-<pre><code>## 
-##  Durbin-Watson test
-## 
-## data:  mdl10
-## DW = 1.7383, p-value = 2.644e-10
-## alternative hypothesis: true autocorrelation is greater than 0</code></pre>
-<pre><code>## 
-##  studentized Breusch-Pagan test
-## 
-## data:  mdl10
-## BP = 235.85, df = 27, p-value &lt; 2.2e-16</code></pre>
-<p><strong>Additive Model with enhancements, best LOOCV RMSE score (mdl7fix):</strong></p>
+## Residual standard error: 49.45 on 2149 degrees of freedom
+## Multiple R-squared:  0.9721, Adjusted R-squared:  0.9718 
+## F-statistic:  3250 on 23 and 2149 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p><strong>mdl6: Additive Model with enhancements, before removal of influential obs:</strong></p>
+<pre class="r"><code>formula(mdl6)</code></pre>
+<pre><code>## YPLLRate ~ State + HealthBadDaysMentAvg + LBWPct + LBWPct + FoodEnvirIX + 
+##     PhysInactPct + DeathsDrinkDrivePct + ChlamydiaRate + log(UninsuredPct) + 
+##     I(PhysPrimCareRate^2) + I(HospPrevRate^2) + MammAnnualPct + 
+##     VaccinatedPct + Population + CollegeSomePct + Income20thpcntl + 
+##     IncomeRatio + SocsAssRate + InjuryDeathRate + DailyPM25Avg + 
+##     HousSvrProbPct + HousSvrCostBurden + HousSvrOvercrowd + HousInadFacil + 
+##     DriveAloneWorkPct + DriveAloneLongPct + LifeExpect + DeathAgeAdjRate + 
+##     DistressFreqMentPct + log(UninsAdultPct) + I(IncHousehldMedian^2) + 
+##     Population2 + PopGE65Pct + PopNativePct + PopPacificPct + 
+##     EnglishNotProfPct + PopFemalePct + PopRuralPct + PopGE65Pct:DeathAgeAdjRate + 
+##     PopFemalePct:DistressFreqPhysPct</code></pre>
+<ul>
+<li>adjusted-Rsquared: 0.9638106 <strong>Good predictive model fit</strong></li>
+<li>loocv-RMSE: 461.6131412 <strong>Bad: should be less than StdDev(YPLLRate) 2367.2590348</strong></li>
+<li>number of coef: 83(Note: State adds 51)</li>
+<li>Shapiro: 4.441306810^{-18} <strong>Poor: p-value below alpha 0.05 rejects normality assumption</strong><br />
+</li>
+<li>Durbin-Watson: 2.041566, Durbin-Watson test, true autocorrelation is greater than 0, 0.5428095, mdl6 <strong>Good: higher p-value so cannot reject null hypothesis residuals are uncorrelated.</strong><br />
+</li>
+<li>bptest: 439.8338894, 82, studentized Breusch-Pagan test, 2.27323610^{-50}, mdl6 <strong>BAD: small p-value means non-constant variance</strong></li>
+</ul>
+<p><strong>mdl6fix: Additive Model with enhancements,after remove influential obs:</strong></p>
+<pre class="r"><code>formula(mdl6fix)</code></pre>
+<pre><code>## YPLLRate ~ State + HealthBadDaysMentAvg + LBWPct + LBWPct + FoodEnvirIX + 
+##     PhysInactPct + DeathsDrinkDrivePct + ChlamydiaRate + log(UninsuredPct) + 
+##     I(PhysPrimCareRate^2) + I(HospPrevRate^2) + MammAnnualPct + 
+##     VaccinatedPct + Population + CollegeSomePct + Income20thpcntl + 
+##     IncomeRatio + SocsAssRate + InjuryDeathRate + DailyPM25Avg + 
+##     HousSvrProbPct + HousSvrCostBurden + HousSvrOvercrowd + HousInadFacil + 
+##     DriveAloneWorkPct + DriveAloneLongPct + LifeExpect + DeathAgeAdjRate + 
+##     DistressFreqMentPct + log(UninsAdultPct) + I(IncHousehldMedian^2) + 
+##     Population2 + PopGE65Pct + PopNativePct + PopPacificPct + 
+##     EnglishNotProfPct + PopFemalePct + PopRuralPct + PopGE65Pct:DeathAgeAdjRate + 
+##     PopFemalePct:DistressFreqPhysPct</code></pre>
+<ul>
+<li>adjusted-Rsquared: 0.9753082 <strong>Good predictive model fit</strong></li>
+<li>loocv-RMSE: 357.6242397 <strong>Improved: should be less than StdDev(YPLLRate) 2367.2590348</strong><br />
+</li>
+<li>number of coef: 83(Note: State adds 51, Region would add 3142)</li>
+<li>Shapiro: 3.199519810^{-5} <strong>Poor: p-value below alpha 0.05 rejects normality assumption</strong><br />
+</li>
+<li>Durbin-Watson: 2.0386718, Durbin-Watson test, true autocorrelation is greater than 0, 0.492023, mdl6fix <strong>Good: higher p-value so cannot reject null hypothesis residuals are uncorrelated.</strong><br />
+</li>
+<li>bptest: 250.782429, 82, studentized Breusch-Pagan test, 5.331894910^{-19}, mdl6fix <strong>small p-value means non-constant variance</strong></li>
+</ul>
+<p><strong>Removing influential observations improved LOOCV RMSE by 22.5272836 percent.</strong></p>
+<p><strong>mdl7fix: Additive Model with enhancements, best LOOCV RMSE score so far:</strong></p>
 <pre class="r"><code>formula(mdl7fix)</code></pre>
 <pre><code>## YPLLRate ~ State + FIPS + HealthPoorPct + HealthBadDaysMentAvg + 
 ##     ObeseAdultsPct + FoodEnvirIX + PhysInactPct + DeathsDrinkDrivePct + 
@@ -980,14 +681,15 @@ summary {
 ##     HealthPoorPct:PopLT18Pct + HealthPoorPct:PopFemalePct + HealthBadDaysMentAvg:DeathAgeAdjRate + 
 ##     LBWPct:IncHousehldMedian</code></pre>
 <ul>
-<li>adjusted-Rsquared: 0.9756216</li>
-<li>loocv-RMSE: 355.8300767</li>
+<li>adjusted-Rsquared: 0.9756216 <strong>Good predictive model fit</strong></li>
+<li>loocv-RMSE: 355.8300767 <strong>Poor: should be less than StdDev(YPLLRate) 2367.2590348</strong></li>
 <li>number of coef: 87(Note: State adds 51, Region would add 3142)</li>
-<li>Shapiro: 0.9967171, 1.257966510^{-4}, Shapiro-Wilk normality test, resid(mdl7fix)</li>
-<li>Durbin-Watson: 2.0301738, Durbin-Watson test, true autocorrelation is greater than 0, 0.4052217, mdl7fix</li>
-<li>bptest: 263.7804476, 86, studentized Breusch-Pagan test, 6.114665210^{-20}, mdl7fix</li>
+<li>Shapiro: 1.257966510^{-4} <strong>Poor: p-value below alpha 0.05 rejects normality assumption</strong><br />
+</li>
+<li>Durbin-Watson: 2.0301738, Durbin-Watson test, true autocorrelation is greater than 0, 0.4052217, mdl7fix <strong>Good: higher p-value so cannot reject null hypothesis residuals are uncorrelated.</strong></li>
+<li>bptest: 263.7804476, 86, studentized Breusch-Pagan test, 6.114665210^{-20}, mdl7fix <strong>small p-value means non-constant variance</strong></li>
 </ul>
-<p><strong>Additive Model with enhancements, smaller model (mdl8):</strong></p>
+<p><strong>mdl8: Additive Model with enhancements, smaller model:</strong></p>
 <pre class="r"><code>formula(mdl8)</code></pre>
 <pre><code>## YPLLRate ~ State + HealthPoorPct + HealthBadDaysMentAvg + FoodEnvirIX + 
 ##     PhysInactPct + PhysPrimCareRate + MammAnnualPct + VaccinatedPct + 
@@ -998,15 +700,16 @@ summary {
 ##     EnglishNotProfPct + PopRuralPct + PopGE65Pct:DeathAgeAdjRate + 
 ##     HealthPoorPct:PopFemalePct + LBWPct:IncHousehldMedian</code></pre>
 <ul>
-<li>adjusted-Rsquared: 0.975242</li>
-<li>loocv-RMSE: 357.3816233</li>
-<li>number of coef: 72(Note: State adds 51, Region would add 3142)</li>
-<li>Shapiro: 0.9969002, 2.205076510^{-4}, Shapiro-Wilk normality test, resid(mdl8)</li>
-<li>Durbin-Watson: 2.0331322, Durbin-Watson test, true autocorrelation is greater than 0, 0.4408894, mdl8<br />
+<li>adjusted-Rsquared: 0.975242 <strong>Good predictive model fit</strong><br />
 </li>
-<li>bptest: 240.1300738, 71, studentized Breusch-Pagan test, 3.167979610^{-20}, mdl8</li>
+<li>loocv-RMSE: 357.3816233 <strong>Poor: should be less than StdDev(YPLLRate) 2367.2590348</strong></li>
+<li>number of coef: 72(Note: State adds 51)</li>
+<li>Shapiro: 2.205076510^{-4} <strong>Poor: p-value below alpha 0.05 rejects normality assumption</strong></li>
+<li>Durbin-Watson: 2.0331322, Durbin-Watson test, true autocorrelation is greater than 0, 0.4408894, mdl8 <strong>Best: higher p-value so cannot reject null hypothesis residuals are uncorrelated.</strong><br />
+</li>
+<li>bptest: 240.1300738, 71, studentized Breusch-Pagan test, 3.167979610^{-20}, mdl8 <strong>small p-value means non-constant variance</strong></li>
 </ul>
-<p><strong>Additive Model with enhancements, smaller model, scaled values and without State (mdl10):</strong></p>
+<p><strong>mdl10: Additive Model with enhancements, smaller model, scaled Result and Predictors and without State:</strong></p>
 <pre class="r"><code>formula(mdl10)</code></pre>
 <pre><code>## YPLLRate ~ HealthPoorPct + HealthBadDaysMentAvg + FoodEnvirIX + 
 ##     PhysInactPct + PhysPrimCareRate + MammAnnualPct + VaccinatedPct + 
@@ -1017,13 +720,111 @@ summary {
 ##     EnglishNotProfPct + PopRuralPct + PopGE65Pct:DeathAgeAdjRate + 
 ##     HealthPoorPct:PopFemalePct + LBWPct:IncHousehldMedian</code></pre>
 <ul>
-<li>adjusted-Rsquared: 0.9693565</li>
-<li>loocv-RMSE: 0.1669574</li>
-<li>number of coef: 28</li>
-<li>Shapiro: 0.9983656, 0.0299791, Shapiro-Wilk normality test, resid(mdl10)</li>
-<li>Durbin-Watson: 1.738311, Durbin-Watson test, true autocorrelation is greater than 0, 2.64358110^{-10}, mdl10<br />
+<li>adjusted-Rsquared: 0.9693565 <strong>Good predictive model</strong><br />
 </li>
-<li>bptest: 235.8534919, 27, studentized Breusch-Pagan test, 3.128012810^{-35}, mdl10</li>
+<li>loocv-RMSE: 0.1669574 <strong>Poor: should be less than StdDev(scaled(YPLLRate) 1</strong></li>
+<li>number of coef: 28</li>
+<li>Shapiro: 0.0299791 <strong>Poor: p-value below alpha 0.05 rejects normality assumption</strong></li>
+<li>Durbin-Watson: 1.738311, Durbin-Watson test, true autocorrelation is greater than 0, 2.64358110^{-10}, mdl10 <strong>suggests residuals are positively auto-correlated.</strong><br />
+</li>
+<li>bptest: 235.8534919, 27, studentized Breusch-Pagan test, 3.128012810^{-35}, mdl10 <strong>small p-value means non-constant variance</strong></li>
+</ul>
+<p><strong>mdl11: Additive Model with enhancements, smaller model, scaled Predictors and without State:</strong></p>
+<pre class="r"><code>formula(mdl11)</code></pre>
+<pre><code>## YPLLRate ~ HealthPoorPct + HealthBadDaysMentAvg + FoodEnvirIX + 
+##     PhysInactPct + PhysPrimCareRate + MammAnnualPct + VaccinatedPct + 
+##     CollegeSomePct + Income20thpcntl + IncomeRatio + SocsAssRate + 
+##     InjuryDeathRate + HousSvrProbPct + HousInadFacil + LifeExpect + 
+##     DeathAgeAdjRate + FoodHealthLimAccPct + logUninsAdultPct + 
+##     IncHousehldMedian + PopGE65Pct + PopNativePct + PopPacificPct + 
+##     EnglishNotProfPct + PopRuralPct + PopGE65Pct:DeathAgeAdjRate + 
+##     HealthPoorPct:PopFemalePct + LBWPct:IncHousehldMedian</code></pre>
+<ul>
+<li>adjusted-Rsquared: 0.9693565 <strong>Good predictive model</strong></li>
+<li>loocv-RMSE: 395.2314823 <strong>Poor: should be less than StdDev(YPLLRate) 2367.2590348</strong></li>
+<li>number of coef: 28</li>
+<li>Shapiro: 0.0299791 <strong>Poor: p-value below alpha 0.05 rejects normality assumption</strong></li>
+<li>Durbin-Watson: 1.738311, Durbin-Watson test, true autocorrelation is greater than 0, 2.64358110^{-10}, mdl11 <strong>suggests residuals are positively auto-correlated.</strong><br />
+</li>
+<li>bptest: 235.8534919, 27, studentized Breusch-Pagan test, 3.128012810^{-35}, mdl11 <strong>small p-value means non-constant variance</strong></li>
+</ul>
+<p><strong>mdl12: Boxcox:</strong></p>
+<pre class="r"><code>formula(mdl12)</code></pre>
+<pre><code>## YPLLRate^lmda ~ HealthPoorPct + HealthBadDaysMentAvg + FoodEnvirIX + 
+##     PhysInactPct + PhysPrimCareRate + MammAnnualPct + VaccinatedPct + 
+##     CollegeSomePct + Income20thpcntl + IncomeRatio + SocsAssRate + 
+##     InjuryDeathRate + HousSvrProbPct + HousInadFacil + LifeExpect + 
+##     DeathAgeAdjRate + FoodHealthLimAccPct + logUninsAdultPct + 
+##     IncHousehldMedian + PopGE65Pct + PopNativePct + PopPacificPct + 
+##     EnglishNotProfPct + PopRuralPct + PopGE65Pct:DeathAgeAdjRate + 
+##     HealthPoorPct:PopFemalePct + LBWPct:IncHousehldMedian</code></pre>
+<ul>
+<li>adjusted-Rsquared: 0.9691936 <strong>Good predictive model</strong></li>
+<li>loocv-RMSE: 52.0759032 <strong>Good: should be less than StdDev(YPLLRate) 272.8396391</strong></li>
+<li>number of coef: 28</li>
+<li>Shapiro: 0.1734028 <strong>Good: p-value just above alpha 0.05 supports normality assumption</strong></li>
+<li>Durbin-Watson: 1.7136749, Durbin-Watson test, true autocorrelation is greater than 0, 5.784843710^{-12}, mdl12 <strong>suggests residuals are positively auto-correlated.</strong><br />
+</li>
+<li>bptest: 208.1502152, 27, studentized Breusch-Pagan test, 6.908681410^{-30}, mdl12 <strong>small p-value means non-constant variance</strong></li>
+<li>lambda: 0.8</li>
+<li>lambda after transform: 1 <strong>Good: lambda after transform should be close to 1.</strong></li>
+</ul>
+<p><strong>mdl14: Boxcox, fewer predictors …best so far…:</strong></p>
+<pre class="r"><code>formula(mdl14)</code></pre>
+<pre><code>## YPLLRate^lmda ~ HealthPoorPct + FoodEnvirIX + PhysInactPct + 
+##     PhysPrimCareRate + MammAnnualPct + Income20thpcntl + IncomeRatio + 
+##     SocsAssRate + InjuryDeathRate + HousSvrProbPct + HousInadFacil + 
+##     LifeExpect + DeathAgeAdjRate + VaccinatedPct + IncHousehldMedian + 
+##     PopGE65Pct + PopNativePct + PopPacificPct + EnglishNotProfPct + 
+##     PopRuralPct + PopGE65Pct:DeathAgeAdjRate + HealthPoorPct:PopFemalePct + 
+##     LBWPct:IncHousehldMedian</code></pre>
+<ul>
+<li>adjusted-Rsquared: 0.9717529 <strong>BEST predictive model</strong></li>
+<li>loocv-RMSE: 49.8019203 <strong>BEST: should be less than StdDev(YPLLRate) 272.8396391</strong></li>
+<li>number of coef: 24<br />
+</li>
+<li>Shapiro: 0.0558434 <strong>Good: p-value just above alpha 0.05 supports normality assumption</strong><br />
+</li>
+<li>Durbin-Watson: 1.7860603, Durbin-Watson test, true autocorrelation is greater than 0, 1.888746210^{-7}, mdl14 <strong>suggests residuals are positively auto-correlated.</strong><br />
+</li>
+<li>bptest: 192.621545, 23, studentized Breusch-Pagan test, 9.44828310^{-29}, mdl14 <strong>small p-value means non-constant variance</strong></li>
+<li>lambda: 0.8</li>
+<li>lambda after transform: 1 <strong>Good: lambda after transform should be close to 1.</strong></li>
+</ul>
+<p><strong>mdl15: Boxcox, with weights:</strong></p>
+<pre class="r"><code>formula(mdl15)</code></pre>
+<pre><code>## YPLLRate^lmda ~ HealthPoorPct + FoodEnvirIX + PhysInactPct + 
+##     PopFemalePct + PhysPrimCareRate + MammAnnualPct + Income20thpcntl + 
+##     IncomeRatio + LBWPct + SocsAssRate + InjuryDeathRate + HousSvrProbPct + 
+##     HousInadFacil + LifeExpect + DeathAgeAdjRate + VaccinatedPct + 
+##     IncHousehldMedian + PopGE65Pct + PopNativePct + PopPacificPct + 
+##     EnglishNotProfPct + PopRuralPct + PopGE65Pct:DeathAgeAdjRate + 
+##     HealthPoorPct:PopFemalePct + LBWPct:IncHousehldMedian</code></pre>
+<ul>
+<li>adjusted-Rsquared: 0.9116571 <strong>Not as high as other models</strong></li>
+<li>loocv-RMSE: 54.3584534 <strong>should be less than StdDev(YPLLRate) 272.8396391 </strong></li>
+<li>number of coef: 26</li>
+<li>Shapiro: 8.507883810^{-9} <strong>low p-value suggests normality assumption is violated</strong></li>
+<li>Durbin-Watson: <strong>small p-value so non-constant variance homoscedastic</strong></li>
+<li>bptest: 198.0763572, 25, studentized Breusch-Pagan test, 7.190220710^{-29}, mdl15 <strong>small p-value means non-constant variance</strong></li>
+<li>lambda: 0.8 <strong>the lambda before transform</strong></li>
+<li>lambda after transform: 0.8 <strong>lambda after transform should be close to 1. Try re-BoxCox</strong></li>
+</ul>
+<p><strong>mdl16: Boxcox, with weights and dropped high p-value (mdl16):</strong> This model has the lowest bptest test statistic of all of the models (155.7573745, 14, studentized Breusch-Pagan test, 5.049217110^{-26}, mdl16) but is still too high. The bptest p-value is very low leading us to reject the null hypothesis of constant variance.</p>
+<pre class="r"><code>formula(mdl16)</code></pre>
+<pre><code>## YPLLRate^lmda ~ HealthPoorPct + MammAnnualPct + IncomeRatio + 
+##     LBWPct + SocsAssRate + InjuryDeathRate + HousSvrProbPct + 
+##     LifeExpect + DeathAgeAdjRate + PopGE65Pct + PopNativePct + 
+##     PopPacificPct + EnglishNotProfPct + +HealthPoorPct:PopFemalePct</code></pre>
+<ul>
+<li>adjusted-Rsquared: 0.9117568 <strong>Not as high as other models</strong></li>
+<li>loocv-RMSE: 54.3894131 <strong>should be less than StdDev(YPLLRate) 272.8396391 </strong></li>
+<li>number of coef: 15 <strong>smallest model</strong></li>
+<li>Shapiro: 3.892098910^{-9} <strong>low p-value suggests normality assumption is violated</strong></li>
+<li>Durbin-Watson: cannot be done on weighted model</li>
+<li>bptest: 155.7573745, 14, studentized Breusch-Pagan test, 5.049217110^{-26}, mdl16 <strong>best so far but small p-value means non-constant variance</strong></li>
+<li>lambda: 0.8 <strong>the lambda before transform</strong></li>
+<li>lambda after transform: 0.5 <strong>lambda after transform should be close to 1. Try re-BoxCox</strong></li>
 </ul>
 </div>
 <div id="partial-correlation-coefficients-and-other-comparisons-to-aid-in-predictor-selection" class="section level2">
@@ -1049,7 +850,6 @@ summary {
 <li>try standardizing values with scale() to see if it helps before fit.</li>
 <li>try glmnet which is ridge regression and should handle weighting, heterosc and interacting variances</li>
 <li>try regsubsets for all possible models (runs forever and kills your computer)</li>
-<li>Professor mentioned BoxCox to decide whether to transform response</li>
 </ul>
 </div>
 
