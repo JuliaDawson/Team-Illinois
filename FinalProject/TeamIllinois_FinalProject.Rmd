@@ -1,0 +1,49 @@
+---
+title: 'Predicting Premature Death Based on Health and Socio-economic Factors'
+author: 'Team Illinois: Data Analysis Project Report'
+date: '08/07/2020'
+output:
+  html_document: 
+    theme: readable
+    toc: yes
+  pdf_document: default
+urlcolor: cyan
+---
+***
+
+**Team Illinois Members**
+
+  - Julia Dawson, NETID: TODO
+  
+  - Joseph Stewart, NETID: TODO
+  
+  - Saumya Singh, NETID: saumyas2
+  
+***
+
+```{r setup, include=FALSE}
+
+# Read as packages here
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(dplyr)
+library(faraway)
+library(lmtest)
+library(MASS)
+
+```
+
+# Introduction
+
+
+# Methods
+
+
+# Results
+
+
+# Discussion
+
+
+# Appendix
