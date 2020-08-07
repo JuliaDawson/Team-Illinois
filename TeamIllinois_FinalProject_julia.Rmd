@@ -61,12 +61,13 @@ We started with a script that merged two sheets from the original data. The team
 
 **Shapiro-Wilk Test**: Shapiro test assesses the normality of errors. The null hypothesis assumes data were sampled from a normal distribution. A small p-value rejects the null hypothesis. 
 
-**Breusch-Pagan-Godfrey Test**: The null hypothesis for the bptest is constant variance (homoscedasticity). As always if the p-value is below a threshold ($\alpha = 0.05$) then heteroscedasticity is assumed. Heteroscedasticity occurs when the variance of the error terms differ across observations. The BP test statistic how big the problem is. Smaller is better.
+**Breusch-Pagan-Godfrey Test**: The null hypothesis for the bptest is constant variance (homoscedasticity). As always if the p-value is below a threshold ($\alpha = 0.05$) then heteroscedasticity is assumed. Heteroscedasticity occurs when the variance of the error terms differ across observations. The BP test statistic shows how big the problem is. Smaller is better.
 
 ### Model Search:
 **Result selection:** We chose YPLLRate as our response variable because it represented the overall data and it had the most highly correlated predictors. YPLL is the years of potential life lost before age 75 per 100,000 population (age-adjusted). YPLLRate is a measure of premature death and is used on an interactive site <https://www.countyhealthrankings.org/explore-health-rankings> to allow people to compare their State and County to others. The statement is on their home page is interesting... _"The annual Rankings provide a revealing snapshot of how health is influenced by where we live, learn, work, and play. They provide a starting point for change in communities."_ . Data is gathered from a variety of sources to create a model for comparison between States and Counties (<https://www.countyhealthrankings.org/explore-health-rankings/measures-data-sources/2020-measures>). Several other variables were considered to be the result but YPLLRate was chosen as the best representative of the data.  
 
 **Predictor selection:** 
+
   + Predictors were chosen and tested for Model 3 if;
     - they had some correlation with result (YPLLRate).
     - their partial correlation with result (YPLLRate) was high while controlling for the other model predictors.
