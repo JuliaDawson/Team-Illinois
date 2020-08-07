@@ -1,0 +1,789 @@
+---
+title: "FinalProjectJulia"
+author: "Julia Dawson, (copied from Sauyma Singh)"
+date: "7/30/2020"
+output:
+  html_document: 
+    theme: readable
+    toc: yes
+  pdf_document: default
+urlcolor: cyan
+---
+
+## Stat 420: Final Project; Team Illinois (Saumya Singh, Joe Stewart, Julia Dawson)
+
+Data is from  <https://www.countyhealthrankings.org/explore-health-rankings/rankings-data-documentation>. 
+
+## Data Cleaning:
+ 1. Read Excel file of County Data.  Merge data from two sheets.
+ 2. The team chose to keep variables that contained rates and to drop race demographics.
+ 2. Drop columns with too many NA's (more than our result YPLLRate). 
+    Out of 92 variables and 3141 observations we were left with 71 variables and 2333 observations.
+ 3. Convert factor variables.
+ 4. Add short names.
+ 
+## Test Statistics that we used:
+**adjusted R-squared** is a modified version of R-squared that has been adjusted for the number of predictors in the model. The adjusted R-squared increases only if the new term improves the model more than would be expected by chance. It decreases when a predictor improves the model by less than expected by chance.
+
+**LOOCV RMSE**: leave-one out cross-validated RMSE allows us to check for overfitting.
+
+**Correlation Coefficients**
+**Partial Correlation Coefficients**
+
+**Shapiro-Wilk Test**: Shapiro test assesses the normality of errors. The null hypothesis assumes data were sampled from a normal distribution. A small p-value rejects the null hypothesis. 
+
+**Breusch-Pagan-Godfrey Test**: <https://www.statisticshowto.com/breusch-pagan-godfrey-test/>
+Heteroscedastic data. ... Heteroscedasticity means “differently scattered”; this is opposite to homoscedastic, which means “same scatter.” Homoscedasticity in regression is an important assumption; if the assumption is violated, you won't be able to use regression analysis. If bptest gives a very small p-value so we reject the null hypothesis of constant variance.
+
+**Durbin-Watson**: <https://www.statisticshowto.com/durbin-watson-test-coefficient>
+dwtest p — p-value of test p-value of the test, returned as a numeric value. dwtest tests whether the residuals are uncorrelated, against the alternative that autocorrelation exists among the residuals. A small p-value indicates that the residuals are autocorrelated. 0 to < 2 is positive autocorrelation. >2 to 4 is negative autocorrelation. Test statistics between 1.5 and 2.5 are relatively normal. The null hypothesis for dwtest is no first order correlation exists. Our p-value is higher than alpha 0.05 so we cannot reject the null hypothesis.
+
+## Model Search:
+* Result selection: We chose YPLLRate as our response variable. YPLLRate had the most highly correlated predictors. YPLL is the years of potential life lost before age 75 per 100,000 population (age-adjusted). YPLLRate is a measure of premature death and is used on an interactive site <https://www.countyhealthrankings.org/explore-health-rankings> to allow people to compare their State and County to others. The statement is on their home page is interesting... _"The annual Rankings provide a revealing snapshot of how health is influenced by where we live, learn, work, and play. They provide a starting point for change in communities."_ . Data is gathered from a variety of sources to create a model for comparison between States and Counties (<https://www.countyhealthrankings.org/explore-health-rankings/measures-data-sources/2020-measures>).  
+
+**Predictor selection:** 
+  + Predictors were chosen if;
+    - they had some correlation with result (YPLLRate).
+    - their partial correlation with result (YPLLRate) was high while controlling for the other model predictors.
+    - they showed up in several large automatically generated models
+    - they seemed representatives of factor we thought could be significant
+    
+  + Predictors were eliminated one by one if:
+    - they had high p-values in a model
+    - removal had good or low affect on adjusted R-squared and LOOCV-RMSE
+    - predictor was highly correlated with another predictor in the model.
+    
+  + Automatic Model builds that were used for comparison:
+    - Additive model all and backward AIC
+    - Multiplicative model all and backward AIC
+    - regsubsets all possible models (tried this but it ran for three days and crashed the computer)
+    
+**Problems with our model and methods to improve it:**
+  + LOOCV RMSE (Cross-Validated RMSE) is too high (355)
+    - Outliers were removed and improved LOOCV RMSE by 30%.
+    - Transforming a few predictors with log and higher order terms improved the adjusted-rsquared and LOOCV RMSE.
+    - Adding some two-way interactions improved the adjusted r-squared and LOOCV RMSE slightly.
+    - BoxCox recommended a lambda of ~0.7. Transformation of response YPLLRate^lambda worked best ($Y^\lambda$ rather than $\frac{(Y^\lambda - 1)}\lambda$). It greatly improved LOOCV RMSE. After the transformation of the response, BoxCox was performed again and lambda was very close to one, indicating a good linear fit.  This seemed to improve the normality problems with our response variable. The LOOCV RMSE was well below the standard deviation of YPLLRate for our best models.
+    
+  + Model suffers from heteroscedasticity (Breusch-Pagan Test) and correlation between residuals (Durbin Watson Test)     
+    - scaled the values of predictors - this did not help
+    - weighted each observations - this did not help
+    - Remove predictors one by one with highest p-value if have good or little affect. This improved all measures.
+    - Removing outliers helped some.
+    - Transforming the Response YPLLRate reduced BP value 25% but is still too high.
+    - we tried a model that does these automatically like glmnet but the results and model were difficult to interpret and compare in this short timeframe.
+    
+**Assessment of Model 3:**
+Model 3 has a good adjusted R-squared value of 0.972.  LOOCV RMSE is 17.5 and when normalized with the standard deviation the normalized RMSE is 0.16. This is a pretty good value.  When the data was split into test and train and run 1000 times, the normalized RMSE was 0.17 confirming our LOOCV RMSE result. The transformation with BoxCox lambda greatly improved the Q-Q plot and the tails were minimal. The Shapiro test had a high P-value support the null hypothesis of normality of errors.  The remaining problem is it fails the BPtest with BP value of 141 and p-value very low. The model still suffers from heteroscedaticity so some degree of non-constant variance.  This value was much improved from over 300 before the BoxCox transform and removal of influential observations. Given the high correlation between many of the predictors and the high variance of the response, this is a pretty good model.
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readr)
+library(dplyr)
+library(faraway)
+library(lmtest)
+library(MASS)
+library(knitr)
+
+
+options(digits = 3)
+
+getwd()
+Raw95naomit = read.csv("DataCleanedJulia.csv") 
+str(Raw95naomit)
+
+calc_loocv_rmse = function(model) {
+  sqrt(mean((resid(model) / (1 - hatvalues(model))) ^ 2))
+}
+
+#Force character arrays to be factors.  
+Raw95naomit$State = as.factor(Raw95naomit$State)
+Raw95naomit$Region= as.factor(Raw95naomit$Region)
+Raw95naomit$WaterViol = as.factor(Raw95naomit$WaterViol)
+
+#Make dataframe just with used data elements for later use in weight and scale calculations
+Raw95just14 = subset(Raw95naomit, select = c(YPLLRate,HealthPoorPct, FoodEnvirIX, PhysInactPct, PhysPrimCareRate, 
+MammAnnualPct, Income20thpcntl,IncomeRatio,SocsAssRate,InjuryDeathRate,HousSvrProbPct,HousInadFacil,
+LifeExpect,DeathAgeAdjRate,VaccinatedPct,IncHousehldMedian,PopGE65Pct,PopNativePct,PopPacificPct,EnglishNotProfPct, PopRuralPct,PopGE65Pct:DeathAgeAdjRate,PopFemalePct,LBWPct,IncHousehldMedian)) 
+Raw95just14 = as.data.frame(Raw95just14)
+
+mdljd = lm(formula = YPLLRate ~ HealthPoorPct + 
+             FoodEnvirIX + PhysInactPct + 
+             PhysPrimCareRate + 
+             MammAnnualPct +   
+             Income20thpcntl + IncomeRatio + SocsAssRate + 
+             InjuryDeathRate + HousSvrProbPct + 
+             HousInadFacil + LifeExpect + 
+             DeathAgeAdjRate + VaccinatedPct + 
+             IncHousehldMedian + 
+             PopGE65Pct + PopNativePct + PopPacificPct + 
+             EnglishNotProfPct + PopRuralPct
+           + PopGE65Pct:DeathAgeAdjRate
+           + HealthPoorPct:PopFemalePct
+           + LBWPct:IncHousehldMedian
+           , data = Raw95naomit)
+
+#Transform according to BoxCox lambda recommendation
+boxcox(mdljd, plotit = TRUE, lambda = seq(-1, 2, by=0.05)) #lambda a little less than 0.8
+lambda_mdljd = boxcox(mdljd, plotit = FALSE) #lambda a little less than 0.8
+lmda_mdljd = lambda_mdljd$x[which.max(lambda_mdljd$y)]
+
+
+#Detect outliers
+cdnaomit = cooks.distance(mdljd)
+cat(paste("Influential observations: there were ", sum(cdnaomit > 4 / length(cdnaomit)), 
+          " observations that were influential to mdljd." ))
+
+mdljdfinal = lm(formula = YPLLRate^lmda_mdljd ~ HealthPoorPct + 
+             FoodEnvirIX + PhysInactPct + 
+             PhysPrimCareRate + 
+             MammAnnualPct +   
+             Income20thpcntl + IncomeRatio + SocsAssRate + 
+             InjuryDeathRate + HousSvrProbPct + 
+             HousInadFacil + LifeExpect + 
+             DeathAgeAdjRate + VaccinatedPct + 
+             IncHousehldMedian + 
+             PopGE65Pct + PopNativePct + PopPacificPct + 
+             EnglishNotProfPct + PopRuralPct
+           + PopGE65Pct:DeathAgeAdjRate
+           + HealthPoorPct:PopFemalePct
+           + LBWPct:IncHousehldMedian
+           , data = Raw95naomit, 
+           subset = cdnaomit <= 4/length(cdnaomit))
+
+
+boxcox(mdljdfinal, plotit = TRUE, lambda = seq(-1, 2.0, by=0.05)) #lambda a little less than 0.8
+lambda_mdljdfinal = boxcox(mdljdfinal, plotit = FALSE) #lambda a little less than 0.8
+lmda_mdljdfinal = lambda_mdljdfinal$x[which.max(lambda_mdljdfinal$y)]
+
+adjr2jd = summary(mdljd)$adj
+adjr2jdfnl = summary(mdljdfinal)$adj
+loocvjd = calc_loocv_rmse(mdljd)
+loocvjdfnl = calc_loocv_rmse(mdljdfinal)
+ncoefjd = length(coef(mdljd))
+ncoefjdfnl = length(coef(mdljdfinal))
+shapjd  = shapiro.test(resid(mdljd))[[2]]
+shapjdfnl  = shapiro.test(resid(mdljdfinal))[[2]]
+bppvaljd = bptest(mdljd)$p.value
+bppvaljdfnl = bptest(mdljdfinal)$p.value
+bpBPjd = as.numeric(bptest(mdljd)[[1]])
+bpBPjdfnl = as.numeric(bptest(mdljdfinal)[[1]])
+
+sdjd = sd(Raw95naomit$YPLLRate)
+sdjdfnl = sd(Raw95naomit$YPLLRate^lmda_mdljd)
+str(mdljdfinal)
+sd(hatvalues(mdljdfinal))
+loocvjd/sdjd
+loocvjdfnl/sdjdfnl
+
+sd(fitted(mdljdfinal))
+loocvsdjd    = loocvjd / sdjd #ratio of loocv and sd
+loocvsdjdfnl = loocvjdfnl / sdjdfnl
+
+table_final = matrix(c(adjr2jd, adjr2jdfnl, loocvjd, loocvjdfnl,  sdjd, sdjdfnl, loocvsdjd, loocvsdjdfnl,
+                          shapjd, shapjdfnl, bppvaljd, bppvaljdfnl, bpBPjd, bpBPjdfnl,
+                          lmda_mdljd, lmda_mdljdfinal, ncoefjd, ncoefjdfnl), ncol = 2, byrow = TRUE)
+
+rownames(table_final) <- c ("adjusted R-squared", "LOOCV RMSE","Std Dev", "LOOCV - Std Dev Ratio", 
+                               "Shapiro P-value", "BP P-value",  "BP value",
+                               "BoxCox lambda",  "Number of Coef")
+colnames(table_final) <- c("Plain Model", "BoxCox_No_Outliers")
+
+# HTML table
+#model_measures <- as.table(model_measures)
+#model_measures
+
+```
+```{r echo=FALSE, results='asis'}
+kable(table_final, digits = 3) 
+```
+
+
+
+## Pairs plot of data
+
+```{r, eval=F, echo=F, fig.height=50, fig.width=12}
+pairs(Raw95just14)
+```
+
+## Try adding weights to the model
+**Conclusion: Weights slightly worsened the model. Weights lowered adjusted R-squaired, raised LOOCV RMSE and lowered the Shapiro p-value.**
+
+```{r, include=FALSE}
+library(dplyr)
+means14 = colMeans(Raw95just14[sapply(Raw95just14, is.numeric)])
+diff = Raw95just14
+sumvar = c(rep(nrow(Raw95just14),0))
+#sumvar
+for (i in 1:nrow(Raw95just14)) {
+   diff[i,] = Raw95just14[i,] - means14
+   sumvar[i] = 0
+}
+for (i in 1:nrow(Raw95just14)) {
+  for (j in 1:ncol(Raw95just14)) {
+    sumvar[i] = sumvar[i] + diff[i,j]^2
+  }
+}
+#sumvar
+wtsmall = 1/sumvar
+#wtsmall
+mdljdwt = lm(formula = YPLLRate^lmda_mdljd ~ HealthPoorPct + 
+             FoodEnvirIX + PhysInactPct + 
+             PhysPrimCareRate + 
+             MammAnnualPct +   
+             Income20thpcntl + IncomeRatio + SocsAssRate + 
+             InjuryDeathRate + HousSvrProbPct + 
+             HousInadFacil + LifeExpect + 
+             DeathAgeAdjRate + VaccinatedPct + 
+             IncHousehldMedian + 
+             PopGE65Pct + PopNativePct + PopPacificPct + 
+             EnglishNotProfPct + PopRuralPct
+           + PopGE65Pct:DeathAgeAdjRate
+           + HealthPoorPct:PopFemalePct
+           + LBWPct:IncHousehldMedian
+           , data = Raw95just14, 
+           subset = cdnaomit <= 4/length(cdnaomit), weights=wtsmall)
+
+adjr2jdwt = summary(mdljdwt)$adj
+loocvjdwt = calc_loocv_rmse(mdljdwt)
+ncoefjdwt = length(coef(mdljdwt))
+shapjdwt  = shapiro.test(resid(mdljdwt))[[2]]
+bppvaljdwt = bptest(mdljdwt)$p.value
+bpBPjdwt = as.numeric(bptest(mdljdwt)[[1]])
+
+sdjdwt = sd(Raw95just14$YPLLRate^lmda_mdljd)
+loocvsdjdwt = loocvjdwt / sdjdwt #ratio of loocv and sd
+
+lambda_mdljdwt = boxcox(mdljdwt, plotit = FALSE) #lambda a little less than 0.8
+lmda_mdljdwt = lambda_mdljdwt$x[which.max(lambda_mdljdwt$y)]
+
+table_weight = matrix(c(adjr2jdwt, adjr2jdfnl, loocvjdwt, loocvjdfnl,  sdjdwt, sdjdfnl, loocvsdjdwt, loocvsdjdfnl,
+                          shapjdwt, shapjdfnl, bppvaljdwt, bppvaljdfnl, bpBPjdwt, bpBPjdfnl,
+                          lmda_mdljdwt, lmda_mdljdfinal, ncoefjdwt, ncoefjdfnl), ncol = 2, byrow = TRUE)
+
+rownames(table_weight) <- c ("adjusted R-squared", "LOOCV RMSE","Std Dev", "LOOCV - Std Dev Ratio", 
+                               "Shapiro P-value", "BP P-value",  "BP value",
+                               "BoxCox lambda",  "Number of Coef")
+colnames(table_weight) <- c("with weights", "BoxCox_No_Outliers")
+```
+```{r}
+formula(mdljdwt)
+```
+
+```{r echo=FALSE, results='asis'}
+kable(table_weight, digits = 3) 
+```
+
+## Try scaling the model predictors
+**Conclusion: Scaling the predictors slightly worsened the model. It slightly lowered adjusted R-squaired, raised LOOCV RMSE. But on the good side it raised Shapiro p-value and slightly lowered BP value.**
+
+```{r, include=FALSE}
+Raw95scale = subset(Raw95just14, select = c(HealthPoorPct, FoodEnvirIX, PhysInactPct, PhysPrimCareRate, 
+MammAnnualPct, Income20thpcntl, IncomeRatio, SocsAssRate, InjuryDeathRate, HousSvrProbPct, HousInadFacil,
+LifeExpect, DeathAgeAdjRate, VaccinatedPct, IncHousehldMedian, PopGE65Pct, PopNativePct,PopPacificPct, EnglishNotProfPct, PopRuralPct, PopFemalePct, LBWPct, IncHousehldMedian)) 
+
+Raw95scale = scale(Raw95scale, center = TRUE, scale = TRUE) #Scale it
+
+Raw95scale = data.frame(cbind(Raw95naomit$YPLLRate,Raw95scale)) #add unscaled YPLLRate back in
+
+Raw95scale = as.data.frame(Raw95scale)
+
+str(Raw95scale)
+names(Raw95scale)[names(Raw95scale) == "V1"] = "YPLLRate" 
+
+
+mdljdsc = lm(formula = YPLLRate^lmda_mdljd ~ HealthPoorPct + 
+             FoodEnvirIX + PhysInactPct + 
+             PhysPrimCareRate + 
+             MammAnnualPct +   
+             Income20thpcntl + IncomeRatio + SocsAssRate + 
+             InjuryDeathRate + HousSvrProbPct + 
+             HousInadFacil + LifeExpect + 
+             DeathAgeAdjRate + VaccinatedPct + 
+             IncHousehldMedian + 
+             PopGE65Pct + PopNativePct + PopPacificPct + 
+             EnglishNotProfPct + PopRuralPct
+           + PopGE65Pct:DeathAgeAdjRate
+           + HealthPoorPct:PopFemalePct
+           + LBWPct:IncHousehldMedian
+             , data = Raw95scale, 
+             subset = cdnaomit <= 4/length(cdnaomit))
+
+adjr2jdsc = summary(mdljdsc)$adj
+loocvjdsc = calc_loocv_rmse(mdljdsc)
+ncoefjdsc = length(coef(mdljdsc))
+shapjdsc  = shapiro.test(resid(mdljdsc))[[2]]
+bppvaljdsc = bptest(mdljdsc)$p.value
+bpBPjdsc = as.numeric(bptest(mdljdsc)[[1]])
+
+sdjdsc = sd(Raw95just14$YPLLRate^lmda_mdljd)
+loocvsdjdsc = loocvjdsc / sdjdsc #ratio of loocv and sd
+
+lambda_mdljdsc = boxcox(mdljdsc, plotit = FALSE) #lambda a little less than 0.8
+lmda_mdljdsc = lambda_mdljdsc$x[which.max(lambda_mdljdsc$y)]
+
+
+table_scale = matrix(c(adjr2jdsc, adjr2jdfnl, loocvjdsc, loocvjdfnl,  sdjdsc, sdjdfnl, loocvsdjdsc, loocvsdjdfnl,
+                          shapjdsc, shapjdfnl, bppvaljdsc, bppvaljdfnl, bpBPjdsc, bpBPjdfnl,
+                          lmda_mdljdsc, lmda_mdljdfinal, ncoefjdsc, ncoefjdfnl), ncol = 2, byrow = TRUE)
+
+rownames(table_scale) <- c ("adjusted R-squared", "LOOCV RMSE","Std Dev", "LOOCV - Std Dev Ratio", 
+                               "Shapiro P-value", "BP P-value",  "BP value",
+                               "BoxCox lambda",  "Number of Coef")
+colnames(table_scale) <- c("Scaled Predictors", "BoxCox_No_Outliers")
+```
+```{r}
+formula(mdljdsc)
+```
+
+```{r echo=FALSE, results='asis'}
+kable(table_scale, digits = 9) 
+```
+
+
+
+## TODO try transformations of predictors
+
+```{r, eval=F, echo=F}
+par(mfrow = c(2,2))
+
+plot(final_df$HSGradRate, 
+     final_df$YPLLRate, 
+     col = "dodgerblue", 
+     pch = 20,
+)
+
+plot(final_df$HSGradRate, 
+     log(final_df$YPLLRate), 
+     col = "dodgerblue", 
+     pch = 20,
+)
+
+```
+
+**\nFitted versus Residuals Plot**
+```{r, eval=T, echo=F}
+par(mfrow = c(1, 2))
+plot(fitted(mdljd), resid(mdljd), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Residuals\nModel before improvements")
+abline(h = 0, col = "darkorange", lwd = 2)
+plot(fitted(mdljdfinal), resid(mdljdfinal), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Residuals\nModel Boxcox, No Outliers")
+abline(h = 0, col = "darkorange", lwd = 2)
+
+par(mfrow = c(1, 2))
+hist(resid(mdljd),
+     xlab   = "Residuals",
+     main   = "Histogram of Residuals\nModel before improvements",
+     col    = "darkorange",
+     border = "dodgerblue",
+     breaks = 45)
+
+hist(resid(mdljdfinal),
+     xlab   = "Residuals",
+     main   = "Histogram of Residuals\nModel Boxcox, No Outliers",
+     col    = "darkorange",
+     border = "dodgerblue",
+     breaks = 45)
+
+```
+```{r, eval=T, echo=F}
+par(mfrow = c(1, 2))
+qqnorm(resid(mdljd), main = "Normal Q-Q Plot\nModel before improvements", col = "darkorange")
+qqline(resid(mdljd), col = "dodgerblue", lwd = 2)
+qqnorm(resid(mdljdfinal), main = "Normal Q-Q Plot\nModel Boxcox, No Outliers", col = "darkorange")
+qqline(resid(mdljdfinal), col = "dodgerblue", lwd = 2)
+```
+
+
+## BOX-COX transformation on response, before and after
+```{r, eval=T, echo=F}
+par(mfrow = c(1, 2))
+boxcox(mdljd, lambda = seq(-1, 2, by = 0.05), plotit = TRUE)
+boxcox(mdljdfinal, lambda = seq(-1, 2, by = 0.05), plotit = TRUE)
+```
+
+
+## Comparison of Weights, Scaling, and original BoxCox, No Outliers
+```{r, eval=T, echo=F}
+par(mfrow = c(1, 3))
+plot(fitted(mdljdfinal), resid(mdljdfinal), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Residuals\nModel Boxcox, No Outliers")
+abline(h = 0, col = "darkorange", lwd = 2)
+plot(fitted(mdljdwt), resid(mdljdwt), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Residuals\nModel with weights")
+abline(h = 0, col = "darkorange", lwd = 2)
+plot(fitted(mdljdsc), resid(mdljdsc), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Residuals\nModel with scale")
+abline(h = 0, col = "darkorange", lwd = 2)
+
+par(mfrow = c(1, 3))
+
+hist(resid(mdljdfinal),
+     xlab   = "Residuals",
+     main   = "Histogram of Residuals\nModel Boxcox, No Outliers",
+     col    = "darkorange",
+     border = "dodgerblue",
+     breaks = 45)
+hist(resid(mdljdwt),
+     xlab   = "Residuals",
+     main   = "Histogram of Residuals\nModel with weights",
+     col    = "darkorange",
+     border = "dodgerblue",
+     breaks = 45)
+hist(resid(mdljdsc),
+     xlab   = "Residuals",
+     main   = "Histogram of Residuals\nModel with scale",
+     col    = "darkorange",
+     border = "dodgerblue",
+     breaks = 45)
+
+```
+```{r, eval=T, echo=F}
+par(mfrow = c(1, 3))
+qqnorm(resid(mdljdfinal), main = "Normal Q-Q Plot\nModel Boxcox, No Outliers", col = "darkorange")
+qqline(resid(mdljdfinal), col = "dodgerblue", lwd = 2)
+qqnorm(resid(mdljdwt), main = "Normal Q-Q Plot\nModel with weights", col = "darkorange")
+qqline(resid(mdljdwt), col = "dodgerblue", lwd = 2)
+qqnorm(resid(mdljdsc), main = "Normal Q-Q Plot\nModel with scale", col = "darkorange")
+qqline(resid(mdljdsc), col = "dodgerblue", lwd = 2)
+```
+
+## Train-Test logic: Split Data into Train and Test and Compare RMSE and percent error:
+
+```{r, eval=T, echo=F}
+
+#Eliminate influential points from beginning so can split into train and test.
+influential = which(cdnaomit > 4/length(cdnaomit))
+Raw95nooutlier = Raw95just14[-influential,]
+
+get_loocv_rmse = function(model) {
+  sqrt(mean((resid(model) / (1 - hatvalues(model))) ^ 2))
+}
+
+get_perc_err = function(actual, predicted) {
+  100 * mean((abs(actual - predicted)) / actual)
+}
+  
+set.seed(42)
+num_sim = 1000
+
+rmse_final = c(rep(num_sim, 0))
+#rmse_plain = c(rep(num_sim, 0))
+ratio_final = c(rep(num_sim, 0))
+#ratio_plain = c(rep(num_sim, 0))
+pcterr_final = c(rep(num_sim, 0))
+#pcterr_plain = c(rep(num_sim, 0))
+
+for (i in 1:num_sim) {
+  indexes = sample(nrow(Raw95nooutlier), (nrow(Raw95nooutlier)) /2)
+  Raw95Train = Raw95nooutlier[indexes,]
+  Raw95Test = Raw95nooutlier[-indexes,]
+  
+  #...dont need subset because already got rid of influential points
+  #final: Calculate standard deviations for train, and for YPLLRate and YPLLRate^lmda_mdljd
+  sdtrplain = sd(Raw95Train$YPLLRate)
+  sdtrboxcox = sd(Raw95Train$YPLLRate^lmda_mdljd)
+
+  #plain: This model has the response BoxCox transform
+  mdljdfinal_trn = lm(formula = YPLLRate^lmda_mdljd ~ HealthPoorPct + 
+               FoodEnvirIX + PhysInactPct + 
+               PhysPrimCareRate + 
+               MammAnnualPct +   
+               Income20thpcntl + IncomeRatio + SocsAssRate + 
+               InjuryDeathRate + HousSvrProbPct + 
+               HousInadFacil + LifeExpect + 
+               DeathAgeAdjRate + VaccinatedPct + 
+               IncHousehldMedian + 
+               PopGE65Pct + PopNativePct + PopPacificPct + 
+               EnglishNotProfPct + PopRuralPct
+             + PopGE65Pct:DeathAgeAdjRate
+             + HealthPoorPct:PopFemalePct
+             + LBWPct:IncHousehldMedian
+             , data = Raw95Train)
+  
+  #This model has does not transform the response and is not necessary
+  #mdljd_trn = lm(formula = YPLLRate ~ HealthPoorPct + 
+  #             FoodEnvirIX + PhysInactPct + 
+  #             PhysPrimCareRate + 
+  #             MammAnnualPct +   
+  #             Income20thpcntl + IncomeRatio + SocsAssRate + 
+  #             InjuryDeathRate + HousSvrProbPct + 
+  #             HousInadFacil + LifeExpect + 
+  #             DeathAgeAdjRate + VaccinatedPct + 
+  #             IncHousehldMedian + 
+  #             PopGE65Pct + PopNativePct + PopPacificPct + 
+  #             EnglishNotProfPct + PopRuralPct
+  #           + PopGE65Pct:DeathAgeAdjRate
+  #           + HealthPoorPct:PopFemalePct
+  #           + LBWPct:IncHousehldMedian
+  #           , data = Raw95Train)
+  
+  rmse_final[i]   = get_loocv_rmse(mdljdfinal_trn)
+  ratio_final[i]  = get_loocv_rmse(mdljdfinal_trn)/sdtrboxcox
+  pcterr_final[i] = get_perc_err(Raw95Test$YPLLRate^lmda_mdljd, predict(mdljdfinal_trn, Raw95Test))
+  
+#  rmse_plain[i]   = get_loocv_rmse(mdljd_trn)
+#  ratio_plain[i]  = get_loocv_rmse(mdljd_trn)/sdtrplain
+#  pcterr_plain[i] = get_perc_err(Raw95Test$YPLLRate, predict(mdljd_trn, Raw95Test))
+}
+#median(pcterr_plain)
+#par(mfrow = c(1, 2))
+hist(rmse_final,
+     xlab   = "RMSE",
+     main   = "RMSE\nModel Boxcox, No Outliers",
+     col    = "darkorange",
+     border = "dodgerblue",
+     breaks = 45)
+#hist(rmse_plain,
+#     xlab   = "RMSE",
+#     main   = "RMSE\nModel, No Outliers",
+#     col    = "darkorange",
+#     border = "dodgerblue",
+#     breaks = 45)
+
+#par(mfrow = c(1, 2))
+hist(ratio_final,
+     xlab   = "RMSE/StdDev",
+     main   = "Ratio RMSE and StdDev\nModel Boxcox, No Outliers",
+     col    = "darkorange",
+     border = "dodgerblue",
+     breaks = 45)
+#hist(ratio_plain,
+#     xlab   = "RMSE/StdDev",
+#     main   = "Ratio RMSE and StdDev\nModel, No Outliers",
+#     col    = "darkorange",
+#     border = "dodgerblue",
+#     breaks = 45)
+
+#par(mfrow = c(1, 2))
+hist(pcterr_final,
+     xlab   = "Percent Error",
+     main   = "Percent Error\nModel Boxcox, No Outliers",
+     col    = "darkorange",
+     border = "dodgerblue",
+     breaks = 45)
+#hist(pcterr_plain,
+#     xlab   = "Percent Error",
+#     main   = "Percent Error\nModel, No Outliers",
+#     col    = "darkorange",
+#     border = "dodgerblue",
+#     breaks = 45)
+
+
+#median(pcterr_plain)
+median(pcterr_final)
+#mean(pcterr_plain)
+mean(pcterr_final)
+
+#median(ratio_plain)
+median(ratio_final)
+#mean(ratio_plain)
+mean(ratio_final)
+```
+
+
+
+## Correlation matrix (to inform predictor selection and model tuning):
+* Correlation matrix is generated between all data elements.
+* Correlation matrix is flattened to pairs and written to an excel spreadsheet for later use.
+
+```{r, eval=F, echo=F}
+#====================================================================================================
+# Get correlation between each numeric variable and the p-values corresponding to significance
+# of the levels of correlation and store them in a flattened file of data element pairs and these
+# two measures, in output file Consolidated_95_CorPval.xlsx in your home directory.
+#Begin Correlations ==============================================================
+# ++++++++++++++++++++++++++++
+# flattenCorrMatrix
+# ++++++++++++++++++++++++++++
+#install.packages("Hmisc")  #Run these the first time...
+# cormat : matrix of the correlation coefficients
+# pmat : matrix of the correlation p-values
+library("Hmisc") #for rcorr to flatten correlation matrix
+
+#Pairs plot is not working for so many, but use later to see if need to transform...
+#pairs(select_if(Raw95, is.numeric)) #tried visual plot but seems to have failed.  ??? dplyr should have been enough
+
+corr_matrix = round(cor(select_if(Raw95back, is.numeric) , use="pairwise.complete.obs"),2) #if non-numeric need pairwise.complete
+#head(corr_matrix)
+#
+# Stores both Correlation and p-values corresponding to significance levels of correlations
+# per http://www.sthda.com/english/wiki/correlation-matrix-a-quick-start-guide-to-analyze-format-and-visualize-a-correlation-matrix-using-r-software
+#res2 = rcorr(corr_matrix, type = c("pearson", "spearman"))
+#Extract the correlation coefficients
+#res2$r
+#Extract the p-values
+#res2$P
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+  )
+}
+
+#pairwise.complete.obs needed if non numeric dat is in the matrix
+res2<-rcorr(as.matrix(cor(select_if(Raw95, is.numeric) , use="pairwise.complete.obs")), type = c("pearson", "spearman"))
+#Flatten from a square matrix to each pair of data elements with their correlation and p-value corresponding to significance levels of correlations
+flat_matrix = flattenCorrMatrix(res2$r, res2$P)
+#head(flat_matrix)
+openxlsx::write.xlsx(x = flat_matrix,                       # Write xlsx in R
+                     file = "Consolidated_95_CorPval.xlsx",
+                     sheetName = "CorrPvals", 
+                     colnames = TRUE, rownames = TRUE, append = FALSE)
+
+#End Correlations================================================================================================
+```
+## Partial Correlation Coefficients and other comparisons:  To aid in predictor selection:
+* Partial correlation coefficients were calculated between all possible predictors and our result (YPLLRate).
+* Partial correlation coefficients were also calculated between some other data elements to see if they might be viable or better results (DeathAgeAdjRate, LifeExpect, Income20thpcntl, UninsAdultPct, LunchFreeReducedPct, PopGE65Pct). None of them had as many highly correlated predictors so we remained with YPLLRate as our response.
+* Individual plots were done of each predictor against YPLLRate. Notes were made as to which transformations improved each individual predictors residuals versus fitted. Highly correlated predictors to the individual predictor where checked to see if an interaction term improved the residuals versus fitted plot and was noted. This data was later used in model tuning decisions.
+
+```{r, eval=F, echo=F}
+#============================================================================================
+#Try partial correlation coef for each of them
+naomitnames = c("State", "Region", "FIPS", "Deaths", "YPLLRate", "HealthPoorPct", 
+                "HealthBadDaysPhysAvg", "HealthBadDaysMentAvg", "LBWPct", "SmokersPct", 
+                "ObeseAdultsPct", "FoodEnvirIX", "PhysInactPct", "ExerAccPct", "DrinkExcPct", 
+                "DeathsDrinkDrivePct", "ChlamydiaRate", "TeenBirthRate", "UninsuredPct", 
+                "PhysPrimCareRate", "DentistRate", "MentHProvRate", "HospPrevRate", 
+                "MammAnnualPct", "VaccinatedPct", "HSGradRate", "Population", "CollegeSomePct", 
+                "LaborForce", "UnemployedPct", "ChildInPovertyPct", "Income80thpcntl", 
+                "Income20thpcntl", "IncomeRatio", "SingsParsHshsldsPct", "SocsAssRate", 
+                "ViolsCrimeAnlAvg", "ViolCrimeRate", "InjuryDeathRate", "DailyPM25Avg", 
+                "WaterViol", "HousSvrProbPct", "HousSvrCostBurden", "HousSvrOvercrowd", 
+                "HousInadFacil", "DriveAloneWorkPct", "DriveAloneLongPct", "LifeExpect", 
+                "DeathAgeAdjRate", "DistressFreqPhysPct", "DistressFreqMentPct", 
+                "DiabetesAdultPct", "FoodInsecurePct", "FoodHealthLimAccPct", "SleepPoorPct", 
+                "UninsAdultPct", "UninsChildPct", "OthPrimCareProvRate", "IncHousehldMedian", 
+                "LunchFreeReducedPct", "TrafficVolume", "HomeownersPct", "HousehldSvrCostPct", 
+                "Population2", "PopLT18Pct", "PopGE65Pct", "PopNativePct", "PopPacificPct", 
+                "EnglishNotProfPct", "PopFemalePct", "PopRuralPct")
+
+# Generate partial correlation coefficients for some possible Results (YPLLRate, DeathAgeAdjRate, LifeExpect, Income20thpcntl, UninsAdultPct, LunchFreeReducedPct, PopGE65Pct) and paste in spreadsheet for later model tuning use.
+naomitpcc = c(rep(length(naomitnames),0)) 
+naomitpccDAR = c(rep(length(naomitnames),0)) 
+naomitpccLEX = c(rep(length(naomitnames),0)) 
+naomitpccINC20 = c(rep(length(naomitnames),0)) 
+naomitpccINCMED = c(rep(length(naomitnames),0)) 
+naomitpccUNINS = c(rep(length(naomitnames),0)) 
+naomitpccFREEL = c(rep(length(naomitnames),0)) 
+naomitpccGE65 = c(rep(length(naomitnames),0)) 
+length(naomitpcc)
+
+#YPLLRate 
+for (i in 1:length(naomitnames)) {
+  (formula3 = paste("Raw95naomit$YPLLRate ~ Raw95naomit$",naomitnames[i], sep=""))
+  mdl1 = lm(formula(paste("YPLLRate ~ . - ", naomitnames[i],sep="")), data = Raw95naomit)
+  mdl2 = lm(formula(paste(naomitnames[i], " ~ . - YPLLRate",sep="")), data = Raw95naomit)
+  (naomitpcc[i] = cor(resid(mdl1),resid(mdl2)))
+}
+#DeathAgeAdjRate
+for (i in 1:length(naomitnames)) {
+  (formula3 = paste("Raw95naomit$DeathAgeAdjRate ~ Raw95naomit$",naomitnames[i], sep=""))
+  mdl1 = lm(formula(paste("DeathAgeAdjRate ~ . - ", naomitnames[i],sep="")), data = Raw95naomit)
+  mdl2 = lm(formula(paste(naomitnames[i], " ~ . - DeathAgeAdjRate",sep="")), data = Raw95naomit)
+  (naomitpccDAR[i] = cor(resid(mdl1),resid(mdl2)))
+}
+#LifeExpect
+for (i in 1:length(naomitnames)) {
+  (formula3 = paste("Raw95naomit$LifeExpect ~ Raw95naomit$",naomitnames[i], sep=""))
+  mdl1 = lm(formula(paste("LifeExpect ~ . - ", naomitnames[i],sep="")), data = Raw95naomit)
+  mdl2 = lm(formula(paste(naomitnames[i], " ~ . - LifeExpect",sep="")), data = Raw95naomit)
+  (naomitpccLEX[i] = cor(resid(mdl1),resid(mdl2)))
+}
+#Income20thpcntl
+for (i in 1:length(naomitnames)) {
+  (formula3 = paste("Raw95naomit$Income20thpcntl ~ Raw95naomit$",naomitnames[i], sep=""))
+  mdl1 = lm(formula(paste("Income20thpcntl ~ . - ", naomitnames[i],sep="")), data = Raw95naomit)
+  mdl2 = lm(formula(paste(naomitnames[i], " ~ . - Income20thpcntl",sep="")), data = Raw95naomit)
+  (naomitpccINC20[i] = cor(resid(mdl1),resid(mdl2)))
+}
+#IncomeHoushldMedian
+for (i in 1:length(naomitnames)) {
+  (formula3 = paste("Raw95naomit$IncHousehldMedian ~ Raw95naomit$",naomitnames[i], sep=""))
+  mdl1 = lm(formula(paste("IncHousehldMedian ~ . - ", naomitnames[i],sep="")), data = Raw95naomit)
+  mdl2 = lm(formula(paste(naomitnames[i], " ~ . - IncHousehldMedian",sep="")), data = Raw95naomit)
+  (naomitpccINCMED[i] = cor(resid(mdl1),resid(mdl2)))
+}
+#UninsAdultPct
+for (i in 1:length(naomitnames)) {
+  (formula3 = paste("Raw95naomit$UninsAdultPct ~ Raw95naomit$",naomitnames[i], sep=""))
+  mdl1 = lm(formula(paste("UninsAdultPct ~ . - ", naomitnames[i],sep="")), data = Raw95naomit)
+  mdl2 = lm(formula(paste(naomitnames[i], " ~ . - UninsAdultPct",sep="")), data = Raw95naomit)
+  (naomitpccUNINS[i] = cor(resid(mdl1),resid(mdl2)))
+}
+#LunchFreeReducedPct
+for (i in 1:length(naomitnames)) {
+  (formula3 = paste("Raw95naomit$LunchFreeReducedPct ~ Raw95naomit$",naomitnames[i], sep=""))
+  mdl1 = lm(formula(paste("LunchFreeReducedPct ~ . - ", naomitnames[i],sep="")), data = Raw95naomit)
+  mdl2 = lm(formula(paste(naomitnames[i], " ~ . - LunchFreeReducedPct",sep="")), data = Raw95naomit)
+  (naomitpccFREEL[i] = cor(resid(mdl1),resid(mdl2)))
+}
+#PopGE65Pct
+for (i in 1:length(naomitnames)) {
+  (formula3 = paste("Raw95naomit$PopGE65Pct ~ Raw95naomit$",naomitnames[i], sep=""))
+  mdl1 = lm(formula(paste("PopGE65Pct ~ . - ", naomitnames[i],sep="")), data = Raw95naomit)
+  mdl2 = lm(formula(paste(naomitnames[i], " ~ . - PopGE65Pct",sep="")), data = Raw95naomit)
+  (naomitpccGE65[i] = cor(resid(mdl1),resid(mdl2)))
+}
+#bind them all together
+partcorrcoef = cbind(naomitnames, naomitpcc, naomitpccDAR, naomitpccLEX, naomitpccINC20,
+                     naomitpccINCMED, naomitpccUNINS, naomitpccFREEL, naomitpccGE65)
+#head(partcorrcoef)
+partcorrcoef
+newcorrcoef = cbind(naomitpccLEX, naomitpccINC20,
+                    naomitpccINCMED, naomitpccUNINS, naomitpccFREEL, naomitpccGE65)
+#head(newcorrcoef)
+newcorrcoef #spit them out and paste manually into spreadsheet for model tuning use
+#---------------------------------------------------------------------------------------
+# Compare each of the top parial correlation coefficents to the result using plot.
+# Look at residuals versus fitted also.
+# Try transformations and see if they improve (log, higher order terms)
+# Try interaction terms between highest correlated predictors to see if improve.
+# Record in a spreadsheet for later model tuning.
+
+# Results - our top partial correlation coefficients with the full model of all naomit
+# variables in descending order follow:
+par(mfrow = c(15,5))
+for (i in 1:length(naomitnames)) {
+  plot(formula(paste("Raw95naomit$YPLLRate ~ Raw95naomit$",naomitnames[i], sep="")), 
+       main=paste("YPLLRate vs ", naomitnames[i], sep=""))
+}
+y = Raw95naomit$YPLLRate
+x = Raw95naomit$TeenBirthRate       
+w1 = Raw95naomit$DiabetesAdultPct   
+w2 = Raw95naomit$PhysInactPct  
+
+cor(x, y)
+plot(y, x)
+mdl = lm(y ~ x)
+plot(fitted(mdl), resid(mdl))
+abline(h = 0)
+
+plot(y, log(x))
+mdl = lm(y ~ log(x))
+plot(fitted(mdl), resid(mdl), main="Log")
+abline(h = 0)
+
+plot(y ~ I(x^2))
+mdl = lm(y ~ x + I(x^2))
+plot(fitted(mdl), resid(mdl), main="Order 2")
+abline(h = 0)
+
+plot(y ~ I(x*w1))
+mdl = lm(y ~ x + w1 + I(x*w1))
+plot(fitted(mdl), resid(mdl), main="Interaction")
+abline(h = 0)
+
+plot(y ~ I(x*w2))
+mdl = lm(y ~ x + w2 + I(x*w2))
+plot(fitted(mdl), resid(mdl), main="Interaction")
+abline(h = 0)
+#============================================================================================
+```
+
