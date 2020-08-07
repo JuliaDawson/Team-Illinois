@@ -13,9 +13,9 @@ urlcolor: cyan
 
 **Team Illinois Members**
 
-  - Julia Dawson, NETID: TODO
+  - Julia Dawson, NETID: juliaed3
   
-  - Joseph Stewart, NETID: TODO
+  - Joseph Stewart, NETID: jstew7
   
   - Saumya Singh, NETID: saumyas2
   
@@ -37,25 +37,25 @@ library(kableExtra)
 
 # Introduction
 
+The purpose of this project is to attempt to build models which can be used to accurately predict premature death based on various health and socio-economic factors. The data for this project were obtained from https://www.countyhealthrankings.org/. County Health Rankings ranks each county within each state based on a variety of health measures obtained from national and state data sources. One of the many attributes contained in the raw data is the "Years of Potential Life Lost Rate" (YPLLRate) which represents premature death for the a given geographical region. The YPLLRate value is the number of years lost per 100,000 people based on the various health and socio-economic factors present in the data. This project seeks to model the interaction between the YPLLRate serving as the response variable and the other attributes serving as the predictor variables. 
+
+The raw data for this project were obtained from https://www.countyhealthrankings.org/. County Health Rankings obtained this data from various nation-wide and state data sources. The raw data consisted of over 240 variables and the preliminary cleaning reduced this number to 96 by removing redundancies and sparsely populated variables. 
+
+The redundant variables included many examples of providing a quantity and a percentage of some factor. For example, there were variables for the number of smokers in a region as well as the percentage of the population that smoked. The percentage variables were chosen over the quantity variables and the quantity variable were omitted There were also many race-specific variables that had N/A values in too many observations to be useful as predictors. These variables were omitted as well. 
+
+The remaining predictor variables are made up of categorical geographic data such as state and county, health related numeric variables such as percentage of low birth weight, percentage of smokers, and percentage of adults with diabetes, and socio-economic numeric variables such as percentage of single parent households, percentage of people with some college, and percentage of people unemployed. 
+
+The objective of this project is to identify which combination of the remaining predictors most-contributes to premature death.
 
 # Methods
 
-## Approach 1
+The large number of predictors in the cleaned data set made model selection very difficult. No single approach seemed to emerge as the best route so we opted to pursue several approaches and compare the results. Model-selection algorithm proved to be computationally infeasible in that it ran for exceptionally long times and the inclusion of the State and Region categorical variables made the number of permutations far too high to be useful. Our three approaches are similar in some ways and different in others as detailed below.
 
-## Approach 2
-
-## Approach 3
-```{r}
-model_3 = lm(Employed ~ . , data = longley)
-```
-
-## Model Diagnostics
-
-```{r}
-
+```{r function definitions, message=FALSE, warning=FALSE, echo=FALSE}
 plot_fitted_resid = function(model, pointcol = "dodgerblue", linecol = "darkorange", title) {
   
-  plot(fitted(model), resid(model), col = pointcol, pch = 20, cex = 1.5, xlab = "Fitted", ylab = "Residuals", main = title)
+  plot(fitted(model), resid(model), col = pointcol, pch = 20, cex = 1.5, xlab = "Fitted", ylab = "Residuals", 
+       main = title)
   abline(h = 0, col = linecol, lwd = 2)
 }
 
@@ -73,43 +73,12 @@ plot_hist_resid = function(model, pointcol = "dodgerblue", linecol = "darkorange
        breaks = 45)
 }
 
-```
-
-**Residuals Plot**
-```{r fig.height=8, fig.width=20}
-par(mfrow = c(1,3))
-plot_fitted_resid(model_3, title="Model 1")
-plot_fitted_resid(model_3, title="Model 2")
-plot_fitted_resid(model_3, title="Model 3")
-
-```
-
-**Q-Q Plot**
-```{r}
-par(mfrow = c(1,3))
-
-```
-
-
-
-
-# Results
-
-
-# Discussion
-
-```{r}
-
 get_bp = function(model) {
   bptest(model)$p.value
-  #decide = unname(bptest(model)$p.value < alpha)
-  #ifelse(decide, "Reject", "Fail to Reject")
 }
 
 get_sw = function(model) {
   shapiro.test(resid(model))$p.value
-  #decide = unname(shapiro.test(resid(model))$p.value < alpha)
-  #ifelse(decide, "Reject", "Fail to Reject")
 }
 
 get_num_params = function(model) {
@@ -128,25 +97,352 @@ get_rmse = function(model) {
   sqrt(mean(resid(model) ^ 2))
 }
 
+rmse  = function(actual, predicted) {
+  sqrt(mean((actual - predicted) ^ 2))
+}
+
 get_AIC = function(model) {
   extractAIC(model)[2]
 }
+```
 
-info_1 = list(get_bp(model_3), get_sw(model_3), get_num_params(model_3), 
-              get_loocv_rmse(model_3), get_adj_r2(model_3), get_rmse(model_3), get_AIC(model_3))
-info_2 = list(get_bp(model_3), get_sw(model_3), get_num_params(model_3), 
-              get_loocv_rmse(model_3), get_adj_r2(model_3), get_rmse(model_3), get_AIC(model_3))
-info_3 = list(get_bp(model_3), get_sw(model_3), get_num_params(model_3), 
-              get_loocv_rmse(model_3), get_adj_r2(model_3), get_rmse(model_3), get_AIC(model_3))
+## Approach 1
 
-model_info = cbind(info_1, info_2, info_3)
+This approach involved attempting to manually select a smaller set of predictors based on their textual descriptions and their individual linear relationships to the response variable. 
 
-rownames(model_info) = c("BP Test", "Shapiro","No params", "LOOV RMSE", "Adj R2", "RMSE", "AIC")
-colnames(model_info) = c("Model 1", "Model 2", "Model 3")
-knitr::kable(model_info) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```{r model_1_load, message=FALSE, warning=FALSE}
+data_1 = read_csv("data/model_1_data.csv")
+pairs(data_1)
+```
+
+Below are plots of the relationships between the response and several predictors.
+
+```{r echo=FALSE}
+par(mfrow = c(2,2))
+
+plot(data_1$Income20thpcntl, 
+     data_1$YPLLRate, 
+     col = "dodgerblue", 
+     pch = 20,
+)
+
+plot(data_1$InjuryDeathRate, 
+     data_1$YPLLRate, 
+     col = "dodgerblue", 
+     pch = 20,
+)
+
+plot(data_1$UnemployedPct, 
+     data_1$YPLLRate, 
+     col = "dodgerblue", 
+     pch = 20,
+)
+
+plot(data_1$SmokersPct, 
+     data_1$YPLLRate, 
+     col = "dodgerblue", 
+     pch = 20,
+)
+```
+
+Transforming predictor variables had no effect on model improvement, but performing a log transformation on the YPLLRate response variable did show improvement. The model was selected by a forward AIC selection with the scope being set to the full interactive model of the chosen predictors. 
+
+
+```{r data_1_model_selection, message=FALSE, warning=FALSE}
+empty_model = lm(log(YPLLRate) ~ 1, data = data_1)
+
+selected_model = step(empty_model, scope = log(YPLLRate) ~ HealthBadDaysMentAvg * HospPrevRate * 
+                                                           Income20thpcntl * InjuryDeathRate * 
+                                                           LBWPct * LifeExpect * 
+                                                           MammAnnualPct * SmokersPct *
+                                                           UnemployedPct * UninsAdultPct * 
+                                                           VaccinatedPct, 
+                                                           direction = "forward", trace = 0)
+
+influential_points = which(cooks.distance(selected_model) > 4 / length(cooks.distance(selected_model)))
+outliers = as.vector(as.integer(names(rstandard(selected_model)[abs(rstandard(selected_model)) > 2])))
+noise = c(outliers, influential_points)
+
+new_data_1 = data_1[-noise, ]
+new_empty_model = lm(log(YPLLRate) ~ 1, data = new_data_1)
+
+final_model_1 = step(new_empty_model, scope = log(YPLLRate) ~ HealthBadDaysMentAvg * HospPrevRate * 
+                                                              Income20thpcntl * InjuryDeathRate * 
+                                                              LBWPct * LifeExpect * 
+                                                              MammAnnualPct * SmokersPct * 
+                                                              UnemployedPct *
+                                                              UninsAdultPct *  VaccinatedPct, 
+                                                              direction = "forward", trace = 0)
+```
+
+
+```{r comparison_plots, message=FALSE, warning=FALSE, echo=FALSE}
+par(mfrow = c(2,2))
+plot_fitted_resid(selected_model, title="Model 1")
+plot_fitted_resid(final_model_1, title="Model 1, No Outliers")
+plot_qq(selected_model, title = "Model 1")
+plot_qq(final_model_1, title="Model 1, No Outliers")
+```
+
+## Approach 2
+
+In this method, we started by selecting a small number of predictors that showed a strong connection to the response variable "Years of Potential Life Lost Rate." This selection was done based on the study of the variables from the data source https://www.countyhealthrankings.org/explore-health-rankings/rankings-data-documentation
+
+This set of variables were added to smaller file to make the loading and knitting of the markdown document more efficient.
+
+```{r model_2_load, message=FALSE, warning=FALSE}
+model_2_DF = read_csv("data//model_2_data.csv") 
+
+model_2_DF$`WaterViol` = as.factor(model_2_DF$`WaterViol`)
+
+model_2_DF = model_2_DF[sample(1:nrow(model_2_DF), 2000, replace=FALSE),]
+
+# Split into test and train
+indexes = sample(nrow(model_2_DF), 1000)
+train_df = model_2_DF[indexes,]
+test_df = model_2_DF[-indexes,]
+```
+
+- Through a pairs plot of the variables we can see that some variables appear to have collinearity issues.
+- There are others that may benefit from transformations.
+We will explore this further.
+
+```{r, fig.height=10, fig.width=15, echo=FALSE}
+pairs(model_2_DF)
+```
+
+- Various transformations were applied to the predictor variables and only one of them showed a marked difference from the transformation. But this variable was dropped later in the final model derived in this section.
+
+```{r echo=FALSE}
+
+par(mfrow = c(2,2))
+
+plot(model_2_DF$UnemployedPct, 
+     model_2_DF$YPLLRate, 
+     col = "dodgerblue", 
+     pch = 20,
+)
+
+plot(log(model_2_DF$UnemployedPct), 
+     model_2_DF$YPLLRate, 
+     col = "dodgerblue", 
+     pch = 20,
+)
+
+plot(model_2_DF$ViolsCrimeAnlAvg, 
+     model_2_DF$YPLLRate, 
+     col = "dodgerblue", 
+     pch = 20,
+)
+
+plot(log(model_2_DF$ViolsCrimeAnlAvg), 
+     model_2_DF$YPLLRate, 
+     col = "dodgerblue", 
+     pch = 20,
+)
 
 ```
 
+- We started by fitting a model with all predictors. **Fitted vs Residuals** plot of this model shows outliers that could be influencing the model. In the next step we removed the ouliers and can see from the **Fitted vs Residuals** and **Q-Q**plot that it greatly improved the variance distribution.
+
+```{r}
+# FULL model, with all predictors
+model_2_full = lm(YPLLRate ~ . , data = model_2_DF)
+```
+
+```{r}
+# Check for Outliers and Influence.
+outliers = as.vector(as.integer(names(rstandard(model_2_full)[abs(rstandard(model_2_full)) > 2])))
+high_influence = as.vector(which(cooks.distance(model_2_full) > 4 / length(cooks.distance(model_2_full))))
+
+# Remove outliers
+remove_noise = c(outliers, high_influence)
+model_2_DF_clean = model_2_DF[-remove_noise,]
+
+model_2_full_cl = lm(YPLLRate ~ . , data = model_2_DF_clean)
+```
+
+```{r}
+(model_2_aic = step(model_2_full_cl, direction = "backward", trace=0))
+```
+
+We tried several approaches to improve this model but the best model we could achieve was by applying box-cox transform to the response variable of a model selected via backward-AIC.  model 
+
+```{r}
+boxcox(model_2_aic, lambda = seq(-0.25, 0.75, by = 0.05), plotit = TRUE)
+```
+
+```{r}
+
+model_2_cox = lm(formula = (((YPLLRate ^ 0.6) - 1) / 0.6) ~ LBWPct + ObeseAdultsPct + DrinkExcPct +  HSGradRate + DistressFreqPhysPct + HIVRate + IncHousehldMedian +  HomeownersPct, data = model_2_DF_clean)
+```
+
+**Plots**
+```{r fig.height=8, fig.width=20, echo=FALSE}
+par(mfrow = c(1,3))
+
+plot_fitted_resid(model_2_full, title="Model 2 FULL")
+plot_fitted_resid(model_2_full_cl, title="Model 2 FULL, Outliers removed")
+plot_fitted_resid(model_2_cox, title="Model 2, Box-Cox transformed")
+```
+
+```{r echo=FALSE}
+par(mfrow = c(1,3))
+
+plot_qq(model_2_full, title="Model 2 FULL")
+plot_qq(model_2_full_cl, title="Model 2 FULL, Outliers removed")
+plot_qq(model_2_cox, title="Model 2, Box-Cox transformed")
+```
+
+## Approach 3
+
+### Data Cleaning: 
+We started with a script that merged two sheets from the original data. The team chose to keep variables that contained rates and to drop race demographics. We started with 92 variables and 3141 observations. For this approach, we then dropped columns with too many NA's (more than our result YPLLRate) and then omitted observations containing 'NA'. This left us with 71 variables and 2333 observations. Lastly, several variables were coerced to factors and short names were added.
+
+### Test Statistics used:
+**adjusted R-squared** is a modified version of R-squared that has been adjusted for the number of predictors in the model. The adjusted R-squared increases only if the new term improves the model more than would be expected by chance. It decreases when a predictor improves the model by less than expected by chance. It indicates the percent of the variation in the output variables that are explained by the input variables.
+
+**LOOCV RMSE**: An observation is removed and the model is fit the the remaining data and this fit used to predict the value of the deleted observation. This is repeated, n times, for each of the n observations and the mean square error is computed.
+
+**Standard Deviation**: We divided LOOCV RMSE by standard deviation in order to normalize RMSE. This allowed us to compare RMSE between models, including models with transformed results.  All three models applied a different transformation to their result.
+
+**Correlation Coefficients** were used to assess how highly correlated predictors are with the result. They were also used to consider which predictors may be interacting.
+
+**Partial Correlation Coefficients** The partial correlation coefficient was used in predictor selection in addition to correlation because it it controls for confounding variables in a model.
+
+**Shapiro-Wilk Test**: Shapiro test assesses the normality of errors. The null hypothesis assumes data were sampled from a normal distribution. A small p-value rejects the null hypothesis. 
+
+**Breusch-Pagan-Godfrey Test**: The null hypothesis for the bptest is constant variance (homoscedasticity). As always if the p-value is below a threshold ($\alpha = 0.05$) then heteroscedasticity is assumed. Heteroscedasticity occurs when the variance of the error terms differ across observations. The BP test statistic shows how big the problem is. Smaller is better.
+
+### Model Search:
+**Result selection:** We chose YPLLRate as our response variable because it represented the overall data and it had the most highly correlated predictors. YPLL is the years of potential life lost before age 75 per 100,000 population (age-adjusted). YPLLRate is a measure of premature death and is used on an interactive site <https://www.countyhealthrankings.org/explore-health-rankings> to allow people to compare their State and County to others. The statement is on their home page is interesting... _"The annual Rankings provide a revealing snapshot of how health is influenced by where we live, learn, work, and play. They provide a starting point for change in communities."_ . Data is gathered from a variety of sources to create a model for comparison between States and Counties (<https://www.countyhealthrankings.org/explore-health-rankings/measures-data-sources/2020-measures>). Several other variables were considered to be the result but YPLLRate was chosen as the best representative of the data.  
+
+**Predictor selection:** 
+
+  + Predictors were chosen and tested for Model 3 if;
+    - they had some correlation with result (YPLLRate).
+    - their partial correlation with result (YPLLRate) was high while controlling for the other model predictors.
+    - they showed up in several large automatically generated models (full additive, full interactive, backward AIC)
+    - they were representative of factor we thought could be significant
+    
+  + Predictors were eliminated one by one if:
+    - they had high p-values in a model
+    - removal had good or low affect on adjusted R-squared and LOOCV-RMSE
+    - predictor was highly correlated with another predictor in the model
+    
+  + Automatic Model builds that were used for comparison:
+    - Additive model all and backward AIC
+    - Multiplicative model all and backward AIC
+    - regsubsets all possible models (we tried this but it ran for three days and crashed the computer)
+    
+**Problems with Model_3 and methods to improve it:**
+  + LOOCV RMSE (Cross-Validated RMSE) was too high (355)
+    - Outliers were removed and improved LOOCV RMSE by 30%.
+    - Transforming a few predictors with log and higher order terms improved the adjusted-rsquared and LOOCV RMSE.
+    - Adding some two-way interactions improved the adjusted r-squared and LOOCV RMSE slightly.
+    - BoxCox recommended a lambda of 0.8. Transformation of response $YPLLRate^\lambda$ produced the best results (rather than $Y^\lambda$ rather than $\frac{(Y^\lambda - 1)}\lambda$). It improved LOOCV RMSE 50% and improved the normality problems with response YPLLRate. The LOOCV RMSE was well below the standard deviation of YPLLRate. The large tails on the Q-Q plot shrank to almost nothing.
+    
+  + Model suffers from heteroscedasticity (Breusch-Pagan Test) and correlation between residuals (Durbin Watson Test)     - Common fixes for heteroscedasticity are to transform the response variable (log or sqrt) or to use weighted regression.
+    - scaled the values of predictors - this did not help
+    - Weighted regression did not improve the BP test statistic.
+    - Remove predictors one by one with highest p-value. This improved all measures.
+    - Removing influential observations improved LOOCV RMSE 30%.
+    - Transforming the Response YPLLRate reduced BP value 50% but is still too high.
+    - we tried a model that does these automatically like glmnet but the results and model were difficult to interpret and compare in this short timeframe.
+    
+### Assessment of Model 3:
+Model 3 has a good adjusted R-squared value of 0.972.  LOOCV RMSE is 17.5 and when normalized with the standard deviation the normalized RMSE is 0.16. This is a pretty good value.  When the data was split into test and train and run 1000 times, the normalized RMSE was 0.17, confirming our LOOCV RMSE result. The transformation with BoxCox lambda greatly improved the Q-Q plot and the tails were minimal. The Shapiro test had a high P-value which support the null hypothesis of normality of errors.  The remaining problem is it fails the BPtest with BP value of 131 and p-value very low. The model still suffers from heteroscedasticity but does well on the other measures.  BP value was much improved from over 300 before the BoxCox transform and removal of influential observations. Model 3 uses 23 predictors out of 93 possible and they are representative of the major contributors to health (environment, income, healthcare, demographics). Given the high correlation between many of the predictors and the high variance of the response, this is a decent model.
+```{r, eval=T, echo=F}
+
+#model_1 = lm(Employed ~ . , data = longley)
+
+#Read data for Model 3
+Raw95naomit = read.csv("data/DataCleanedJulia.csv") 
+#str(Raw95naomit)
+#Force character arrays to be factors.  
+Raw95naomit$State = as.factor(Raw95naomit$State)
+Raw95naomit$Region= as.factor(Raw95naomit$Region)
+Raw95naomit$WaterViol = as.factor(Raw95naomit$WaterViol)
+#Make this model to can figure out the lambda
+mdl3t = lm(formula = YPLLRate ~ HealthPoorPct + 
+             FoodEnvirIX + PhysInactPct + 
+             PhysPrimCareRate + 
+             MammAnnualPct +   
+             Income20thpcntl + IncomeRatio + SocsAssRate + 
+             InjuryDeathRate + HousSvrProbPct + 
+             HousInadFacil + LifeExpect + 
+             DeathAgeAdjRate + VaccinatedPct + 
+             IncHousehldMedian + 
+             PopGE65Pct + PopNativePct + PopPacificPct + 
+             EnglishNotProfPct + PopRuralPct
+           + PopGE65Pct:DeathAgeAdjRate
+           + HealthPoorPct:PopFemalePct
+           + LBWPct:IncHousehldMedian
+           , data = Raw95naomit)
+
+#Transform according to BoxCox lambda recommendation
+lambda_mdl3 = boxcox(mdl3t, plotit = FALSE) #lambda a little less than 0.8
+lmda_mdl3 = lambda_mdl3$x[which.max(lambda_mdl3$y)]
+
+#Detect outliers
+cdnaomit = cooks.distance(mdl3t)
+
+#Create Model_3
+model_3 = lm(formula = YPLLRate^lmda_mdl3 ~ HealthPoorPct + 
+             FoodEnvirIX + PhysInactPct + 
+             PhysPrimCareRate + 
+             MammAnnualPct +   
+             Income20thpcntl + IncomeRatio + SocsAssRate + 
+             InjuryDeathRate + HousSvrProbPct + 
+             HousInadFacil + LifeExpect + 
+             DeathAgeAdjRate + VaccinatedPct + 
+             IncHousehldMedian + 
+             PopGE65Pct + PopNativePct + PopPacificPct + 
+             EnglishNotProfPct + PopRuralPct
+           + PopGE65Pct:DeathAgeAdjRate
+           + HealthPoorPct:PopFemalePct
+           + LBWPct:IncHousehldMedian
+           , data = Raw95naomit, 
+           subset = cdnaomit <= 4/length(cdnaomit))
+```
+## The three models are shown below:
+
+**Model_1**
+```{r}
+formula(model_3)
+```
+
+**Model_2**
+```{r}
+formula(model_3)
+```
+**Model_3**
+```{r}
+formula(model_3)
+```
+
+**Residuals Plot**
+```{r fig.height=8, fig.width=20, echo=FALSE}
+par(mfrow = c(1,2))
+plot_fitted_resid(mdl3t, title="Model 3, result not transformed")
+plot_fitted_resid(model_3, title="Model 3, Box-Cox transformed")
+
+```
+
+**Q-Q Plot**
+```{r, echo=FALSE}
+par(mfrow = c(1,2))
+plot_qq(mdl3t, title="Model 3, result not transformed")
+plot_qq(model_3, title="Model 3, Box-Cox transformed")
+```
+
+
+## Model Diagnostics
+
+
+# Results
+
+
+# Discussion
 
 # Appendix
