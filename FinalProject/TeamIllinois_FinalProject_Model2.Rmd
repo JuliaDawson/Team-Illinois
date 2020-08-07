@@ -37,6 +37,9 @@ library(kableExtra)
 
 # Introduction
 
+Due to the number of predictors in our initial dataset, we decided to try several approaches to pare down the number predictors to a manageable number. These approaches are drastically different in some ways and similar in other ways. 
+
+
 
 # Methods
 ```{r}
@@ -104,6 +107,11 @@ get_AIC = function(model) {
 
 ## Approach 2
 
+# Starting point
+In this method, we started by selecting a small number of predictors that showed a strong connection to the response variable "Years of Potential Life Lost Rate". This selection was done based on the study of the variables from the data source https://www.countyhealthrankings.org/explore-health-rankings/rankings-data-documentation
+
+This set of variables were added to smaller file to make the loading and knitting of the markdown document more efficient.
+
 ```{r}
 model_2_DF = read_csv("data//Model_2_data.csv") 
 
@@ -118,12 +126,16 @@ test_df = model_2_DF[-indexes,]
 
 ```
 
+- Through a pairs plot of the variables we can see that some variables appear to have collinearity issues.
+- There are others that may benefit from transformations.
+We will explore this further.
 
 ```{r, fig.height=10, fig.width=15}
 pairs(model_2_DF)
 ```
 
 
+- Various transformations were applied to the predictor variables and only one of them showed a marked difference from the transformation. But this variable was dropped later in the final model derived in this section.
 
 ```{r}
 
@@ -155,12 +167,14 @@ plot(log(model_2_DF$ViolsCrimeAnlAvg),
 
 ```
 
+- We started by fitting a model with all predictors. **Fitted vs Residuals** plot of this model shows outliers that could be influencing the model. In the next step we removed the ouliers and can see from the **Fitted vs Residuals** and **Q-Q**plot that it greatly improved the variance distribution.
+
 ```{r}
+# FULL model, with all predictors
 model_2_full = lm(YPLLRate ~ . , data = model_2_DF)
 ```
 
 ```{r}
-
 # Check for Outliers and Influence.
 outliers = as.vector(as.integer(names(rstandard(model_2_full)[abs(rstandard(model_2_full)) > 2])))
 high_influence = as.vector(which(cooks.distance(model_2_full) > 4 / length(cooks.distance(model_2_full))))
@@ -176,6 +190,8 @@ model_2_full_cl = lm(YPLLRate ~ . , data = model_2_DF_clean)
 (model_2_aic = step(model_2_full_cl, direction = "backward", trace=0))
 
 ```
+
+We tried several approches to improve this model but the best model we could achieve was by applying box-cox transform to the response variable of a model selected via backward-AIC.  model 
 
 ```{r}
 boxcox(model_2_aic, lambda = seq(-0.25, 0.75, by = 0.05), plotit = TRUE)
