@@ -113,6 +113,7 @@ This approach involved attempting to manually select a smaller set of predictors
 ```{r model_1_load, message=FALSE, warning=FALSE}
 data_1 = read_csv("data/model_1_data.csv")
 pairs(data_1)
+
 ```
 
 Below are plots of the relationships between the response and several predictors.
@@ -273,7 +274,6 @@ boxcox(model_2_aic, lambda = seq(-0.25, 0.75, by = 0.05), plotit = TRUE)
 ```
 
 ```{r}
-
 model_2_cox = lm(formula = (((YPLLRate ^ 0.6) - 1) / 0.6) ~ LBWPct + ObeseAdultsPct + DrinkExcPct +  HSGradRate + DistressFreqPhysPct + HIVRate + IncHousehldMedian +  HomeownersPct, data = model_2_DF_clean)
 ```
 
@@ -436,8 +436,28 @@ plot_qq(mdl3t, title="Model 3, result not transformed")
 plot_qq(model_3, title="Model 3, Box-Cox transformed")
 ```
 
-
 ## Model Diagnostics
+
+```{r model_diagnostics, message=FALSE, warning=FALSE, echo=FALSE}
+
+# Model 1
+info_1 = c(get_bp(final_model_1), get_sw(final_model_1), get_num_params(final_model_1), get_loocv_rmse(final_model_1), get_adj_r2(final_model_1), get_rmse(final_model_1), get_AIC(final_model_1))
+
+# Model 2
+info_2 = c(get_bp(model_2_cox), get_sw(model_2_cox), get_num_params(model_2_cox), get_loocv_rmse(model_2_cox), get_adj_r2(model_2_cox), get_rmse(model_2_cox), get_AIC(model_2_cox))
+
+# Model 3
+info_3 = c(get_bp(model_3), get_sw(model_3), get_num_params(model_3), get_loocv_rmse(model_3), get_adj_r2(model_3), get_rmse(model_3), get_AIC(model_3))
+
+model_info = cbind(info_1, info_2, info_3)
+
+rownames(model_info) = c("BP Test", "Shapiro","No params", "LOOV RMSE", "Adj R2", "RMSE", "AIC")
+colnames(model_info) = c("Model 1", "Model 2", "Model 3")
+
+knitr::kable(model_info) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
 
 
 # Results
