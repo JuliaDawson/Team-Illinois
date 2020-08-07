@@ -99,7 +99,9 @@ dwtest p — p-value of test p-value of the test, returned as a numeric value. d
     - Removing outliers helped some.
     - Transforming the Response YPLLRate reduced BP value 25% but is still too high.
     - we tried a model that does these automatically like glmnet but the results and model were difficult to interpret and compare in this short timeframe.
-
+    
+**Assessment of Model 3:**
+Model 3 has a good adjusted R-squared value of 0.972.  LOOCV RMSE is 17.5 and when normalized with the standard deviation the normalized RMSE is 0.16. This is a pretty good value.  When the data was split into test and train and run 1000 times, the normalized RMSE was 0.17 confirming our LOOCV RMSE result. The transformation with BoxCox lambda greatly improved the Q-Q plot and the tails were minimal. The Shapiro test had a high P-value which support the null hypothesis of normality of errors.  The remaining problem is it fails the BPtest with BP value of 141 and p-value very low. The model still suffers from heteroscedaticity, some degree of non-constant variance.  BP value was much improved from over 300 before the BoxCox transform and removal of influential observations. Given the high correlation between many of the predictors and the high variance of the response, this is a decent model.
 ```{r, eval=T, echo=F}
 
 #model_1 = lm(Employed ~ . , data = longley)
