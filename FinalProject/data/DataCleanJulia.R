@@ -1,9 +1,7 @@
 library("readr") #to read excel file
 getwd() #What is the home directory
-#Read Excel File for raw data and then we will add the corrpval sheet too it...
-#Read Raw data, sheet 2 with short names in line 1. Also, NA has been replaced by 0 everywhere.
+#Read Excel File for raw data 
 na_strings = c("NA")
-#Raw95 = readxl::read_excel("C:\\Users\\Owner\\OneDrive\\Documents\\R Code\\STAT_420\\FinalProject\\DataCleanModelPrelim\\Consolidated_95_Raw.xlsx", na = na_strings)
 Raw95 = readxl::read_excel("Consolidated_95_Raw.xlsx", na = na_strings)
 Raw95 = as.data.frame(unclass(Raw95))
 names(Raw95) = c("Row",
@@ -152,4 +150,5 @@ cat(paste("Raw95naomit: Has ", sum(is.na(Raw95naomit)),
           " NA at rate ", mean(is.na(Raw95naomit))))
 
 #Write CSV file out
-write.csv(Raw95naomit, ".\\Data\\DataCleanedJulia.csv", row.names = FALSE)
+write.csv(Raw95naomit, "DataCleanedJulia.csv", row.names = FALSE)
+
