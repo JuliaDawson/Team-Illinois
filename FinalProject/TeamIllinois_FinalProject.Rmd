@@ -22,7 +22,7 @@ urlcolor: cyan
 ***
 
 ```{r setup, include=FALSE}
-
+options(scipen = 1, digits = 4, width = 80, fig.align = "center")
 # Read as packages here
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
@@ -110,10 +110,9 @@ get_AIC = function(model) {
 
 This approach involved attempting to manually select a smaller set of predictors based on their textual descriptions and their individual linear relationships to the response variable. 
 
-```{r model_1_load, message=FALSE, warning=FALSE}
+```{r model_1_load, message=FALSE, warning=FALSE, fig.height=10, fig.width=15}
 data_1 = read_csv("data/model_1_data.csv")
 pairs(data_1)
-
 ```
 
 Below are plots of the relationships between the response and several predictors.
@@ -357,7 +356,7 @@ Model 3 has a good adjusted R-squared value of 0.972.  LOOCV RMSE is 17.5 and wh
 #model_1 = lm(Employed ~ . , data = longley)
 
 #Read data for Model 3
-Raw95naomit = read.csv("data/DataCleanedJulia.csv") 
+Raw95naomit = read.csv("data/Model_3_data.csv") 
 #str(Raw95naomit)
 #Force character arrays to be factors.  
 Raw95naomit$State = as.factor(Raw95naomit$State)
@@ -405,21 +404,6 @@ model_3 = lm(formula = YPLLRate^lmda_mdl3 ~ HealthPoorPct +
            , data = Raw95naomit, 
            subset = cdnaomit <= 4/length(cdnaomit))
 ```
-## The three models are shown below:
-
-**Model_1**
-```{r}
-formula(model_3)
-```
-
-**Model_2**
-```{r}
-formula(model_3)
-```
-**Model_3**
-```{r}
-formula(model_3)
-```
 
 **Residuals Plot**
 ```{r fig.height=8, fig.width=20, echo=FALSE}
@@ -434,6 +418,25 @@ plot_fitted_resid(model_3, title="Model 3, Box-Cox transformed")
 par(mfrow = c(1,2))
 plot_qq(mdl3t, title="Model 3, result not transformed")
 plot_qq(model_3, title="Model 3, Box-Cox transformed")
+```
+
+# Results
+
+## The three models are shown below:
+
+**Model_1**
+```{r}
+formula(final_model_1)
+```
+
+**Model_2**
+```{r}
+formula(model_2_cox)
+```
+
+**Model_3**
+```{r}
+formula(model_3)
 ```
 
 ## Model Diagnostics
@@ -460,7 +463,7 @@ knitr::kable(model_info) %>%
 
 
 
-# Results
+
 
 
 # Discussion
