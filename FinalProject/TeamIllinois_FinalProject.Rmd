@@ -49,7 +49,7 @@ The objective of this project is to identify which combination of the remaining 
 
 # Methods
 
-The large number of predictors in the cleaned data set made model selection very difficult. No single approach seemed to emerge as the best route so we opted to pursue several approaches and compare the results. Model-selection algorithm proved to be computationally infeasible in that it ran for exceptionally long times and the inclusion of the State and Region categorical variables made the number of permutations far too high to be useful. Our three approaches are similar in some ways and different in others as detailed below.
+The large number of predictors in the cleaned data set made model selection very difficult. No single approach seemed to emerge as the best route so we opted to pursue several approaches and compare the results. Model-selection algorithm proved to be computationally unfeasible in that it ran for exceptionally long times and the inclusion of the State and Region categorical variables made the number of permutations far too high to be useful. Our three approaches are similar in some ways and different in others as detailed below.
 
 ### Test Statistics used:
 
@@ -84,7 +84,7 @@ plot_hist_resid = function(model, pointcol = "dodgerblue", linecol = "darkorange
 }
 
 get_bp = function(model) {
-  bptest(model)$p.value
+  as.numeric(bptest(model)[[1]])
 }
 
 get_sw = function(model) {
@@ -257,7 +257,7 @@ plot(log(model_2_DF$ViolsCrimeAnlAvg),
 
 ```
 
-- We started by fitting a model with all predictors. **Fitted vs Residuals** plot of this model shows outliers that could be influencing the model. In the next step we removed the ouliers and can see from the **Fitted vs Residuals** and **Q-Q**plot that it greatly improved the variance distribution.
+- We started by fitting a model with all predictors. **Fitted vs Residuals** plot of this model shows outliers that could be influencing the model. In the next step we removed the outliers and can see from the **Fitted vs Residuals** and **Q-Q**plot that it greatly improved the variance distribution.
 
 ```{r}
 # FULL model, with all predictors
@@ -351,13 +351,8 @@ We started with a script that merged two sheets from the original data. The team
 ### Assessment of Model 3:
 Model 3 has a good adjusted R-squared value of 0.972.  LOOCV RMSE is 17.5 and when normalized with the standard deviation the normalized RMSE is 0.16. This is a pretty good value.  When the data was split into test and train and run 1000 times, the normalized RMSE was 0.17, confirming our LOOCV RMSE result. The transformation with BoxCox lambda greatly improved the Q-Q plot and the tails were minimal. The Shapiro test had a high P-value which support the null hypothesis of normality of errors.  The remaining problem is it fails the BPtest with BP value of 131 and p-value very low. The model still suffers from heteroscedasticity but does well on the other measures.  BP value was much improved from over 300 before the BoxCox transform and removal of influential observations. Model 3 uses 23 predictors out of 93 possible and they are representative of the major contributors to health (environment, income, healthcare, demographics). Given the high correlation between many of the predictors and the high variance of the response, this is a decent model.
 ```{r, eval=T, echo=F}
-
-#model_1 = lm(Employed ~ . , data = longley)
-
 #Read data for Model 3
 Raw95naomit = read.csv("data/Model_3_data.csv") 
-#str(Raw95naomit)
-#Force character arrays to be factors.  
 Raw95naomit$State = as.factor(Raw95naomit$State)
 Raw95naomit$Region= as.factor(Raw95naomit$Region)
 Raw95naomit$WaterViol = as.factor(Raw95naomit$WaterViol)
@@ -527,13 +522,10 @@ median(ratio_final)
 mean(ratio_final)
 ```
 
-
 We used Model 3 for testing purposes since it had the highest Adjusted R Squared value and the lowest Normalized RMSE value. The data were split in half for a test set and a train set. The  A model was fit using the train data set and this model was used to predict the test data. This was simulated 1000 times and the percent error and normalized RMSE was saved each time.
 
 A histogram of the normalized RMSE and percent error was plotted for each of the 1000 trained models. The mean of the normalized RMSE for the models was 0.17 which is very close to the LOOCV RMSE value of 0.158 for Model 3. 
 
-The mean of the percent error was 2.63 chichis less than and more narrowly distributed than for the model whose predictor was not transformed. 
+The mean of the percent error was 2.63 which is less than and more narrowly distributed than for the model whose predictor was not transformed. 
 
 It appears that, based on the information above that Model 3 could be useful for predicting the value of Years of Potential Life Lost Rate.
-
-
