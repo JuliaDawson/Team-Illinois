@@ -114,6 +114,10 @@ rmse  = function(actual, predicted) {
 get_AIC = function(model) {
   extractAIC(model)[2]
 }
+
+get_perc_err = function(actual, predicted) {
+  100 * mean((abs(actual - predicted)) / actual)
+}
 ```
 
 ## Approach 1
@@ -437,12 +441,9 @@ formula(model_3)
 ## Model Diagnostics
 
 ```{r model_diagnostics, message=FALSE, warning=FALSE, echo=FALSE}
-
-
 rmse_norm_1 = get_rmse(final_model_1)/sd(log(data_1$YPLLRate))
 rmse_norm_2 = get_rmse(model_2_cox)/sd((model_2_DF$YPLLRate^0.6 - 1)/0.6)
 rmse_norm_3 = get_rmse(model_3)/sd(Raw95naomit$YPLLRate^lmda_mdl3)
-
 
 # Model 1
 info_1 = c(get_bp(final_model_1), get_sw(final_model_1), get_num_params(final_model_1), get_loocv_rmse(final_model_1), get_adj_r2(final_model_1), get_rmse(final_model_1), get_AIC(final_model_1), rmse_norm_1)
@@ -455,18 +456,84 @@ info_3 = c(get_bp(model_3), get_sw(model_3), get_num_params(model_3), get_loocv_
 
 model_info = cbind(info_1, info_2, info_3)
 
-rownames(model_info) = c("BP Test", "Shapiro","No params", "LOOV RMSE", "Adj R2", "RMSE", "AIC", "Normalized RMSE")
+rownames(model_info) = c("BP Test Statistic Value", "Shapiro Wilk p-value","No params", "LOOV RMSE", "Adj R2", "RMSE", "AIC", "Normalized RMSE")
 colnames(model_info) = c("Model 1", "Model 2", "Model 3")
 
 knitr::kable(model_info) %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 ```
 
-
-
-
-
+The table above summarizes the metrics obtained from each of the three models. Models 1 and 3 appear to have similar metrics Each of the models failed the Breusch-Pagan test indicating that the constant variance assumption has been violated. All three p-values were essentially 0 so the table above lists the BP test statistic instead. All 3 model passed the Shapiro-Wilk test indicating that the data were sampled from a normal distribution. 
 
 # Discussion
 
-# Appendix
+```{r message=FALSE, warning=FALSE}
+cdnaomit = cooks.distance(mdl3t)
+influential = which(cdnaomit > 4/length(cdnaomit))
+Raw95nooutlier = Raw95naomit[-influential,]
+
+set.seed(42)
+num_sim = 1000
+
+rmse_final = c(rep(num_sim, 0))
+ratio_final = c(rep(num_sim, 0))
+pcterr_final = c(rep(num_sim, 0))
+
+for (i in 1:num_sim) {
+  indexes = sample(nrow(Raw95nooutlier), (nrow(Raw95nooutlier)) /2)
+  Raw95Train = Raw95nooutlier[indexes,]
+  Raw95Test = Raw95nooutlier[-indexes,]
+  
+  #...dont need subset because already got rid of influential points
+  #final: Calculate standard deviations for train, and for YPLLRate and YPLLRate^lmda_mdljd
+  sdtrboxcox = sd(Raw95Train$YPLLRate^lmda_mdl3)
+  
+  #plain: This model has the response BoxCox transform
+  mdljdfinal_trn = lm(formula = formula(model_3), data = Raw95Train)
+  
+  rmse_final[i]   = get_loocv_rmse(mdljdfinal_trn)
+  ratio_final[i]  = get_loocv_rmse(mdljdfinal_trn)/sdtrboxcox
+  
+  #Prediction with Test Values
+  pcterr_final[i] = get_perc_err(Raw95Test$YPLLRate^lmda_mdl3, predict(mdljdfinal_trn, Raw95Test))
+}
+
+```
+
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+par(mfrow = c(1, 2))
+hist(ratio_final,
+     xlab   = "RMSE/StdDev",
+     main   = "Ratio RMSE and StdDev\nModel Boxcox",
+     col    = "darkorange",
+     border = "dodgerblue",
+     breaks = 45)
+
+hist(pcterr_final,
+     xlab   = "Percent Error",
+     main   = "Percent Error\nModel Boxcox",
+     col    = "darkorange",
+     border = "dodgerblue",
+     breaks = 45)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+median(pcterr_final)
+mean(pcterr_final)
+
+median(ratio_final)
+mean(ratio_final)
+```
+
+
+We used Model 3 for testing purposes since it had the highest Adjusted R Squared value and the lowest Normalized RMSE value. The data were split in half for a test set and a train set. The  A model was fit using the train data set and this model was used to predict the test data. This was simulated 1000 times and the percent error and normalized RMSE was saved each time.
+
+A histogram of the normalized RMSE and percent error was plotted for each of the 1000 trained models. The mean of the normalized RMSE for the models was 0.17 which is very close to the LOOCV RMSE value of 0.158 for Model 3. 
+
+The mean of the percent error was 2.63 chichis less than and more narrowly distributed than for the model whose predictor was not transformed. 
+
+It appears that, based on the information above that Model 3 could be useful for predicting the value of Years of Potential Life Lost Rate.
+
+
