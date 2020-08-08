@@ -51,6 +51,16 @@ The objective of this project is to identify which combination of the remaining 
 
 The large number of predictors in the cleaned data set made model selection very difficult. No single approach seemed to emerge as the best route so we opted to pursue several approaches and compare the results. Model-selection algorithm proved to be computationally infeasible in that it ran for exceptionally long times and the inclusion of the State and Region categorical variables made the number of permutations far too high to be useful. Our three approaches are similar in some ways and different in others as detailed below.
 
+### Test Statistics used:
+
+* adjusted R-squared
+* LOOCV RMSE
+* Standard Deviation
+* Correlation Coefficients
+* Partial Correlation Coefficients
+* Shapiro-Wilk Test
+* Breusch-Pagan-Godfrey Test
+
 ```{r function definitions, message=FALSE, warning=FALSE, echo=FALSE}
 plot_fitted_resid = function(model, pointcol = "dodgerblue", linecol = "darkorange", title) {
   
@@ -298,21 +308,6 @@ plot_qq(model_2_cox, title="Model 2, Box-Cox transformed")
 ### Data Cleaning: 
 We started with a script that merged two sheets from the original data. The team chose to keep variables that contained rates and to drop race demographics. We started with 92 variables and 3141 observations. For this approach, we then dropped columns with too many NA's (more than our result YPLLRate) and then omitted observations containing 'NA'. This left us with 71 variables and 2333 observations. Lastly, several variables were coerced to factors and short names were added.
 
-### Test Statistics used:
-**adjusted R-squared** is a modified version of R-squared that has been adjusted for the number of predictors in the model. The adjusted R-squared increases only if the new term improves the model more than would be expected by chance. It decreases when a predictor improves the model by less than expected by chance. It indicates the percent of the variation in the output variables that are explained by the input variables.
-
-**LOOCV RMSE**: An observation is removed and the model is fit the the remaining data and this fit used to predict the value of the deleted observation. This is repeated, n times, for each of the n observations and the mean square error is computed.
-
-**Standard Deviation**: We divided LOOCV RMSE by standard deviation in order to normalize RMSE. This allowed us to compare RMSE between models, including models with transformed results.  All three models applied a different transformation to their result.
-
-**Correlation Coefficients** were used to assess how highly correlated predictors are with the result. They were also used to consider which predictors may be interacting.
-
-**Partial Correlation Coefficients** The partial correlation coefficient was used in predictor selection in addition to correlation because it it controls for confounding variables in a model.
-
-**Shapiro-Wilk Test**: Shapiro test assesses the normality of errors. The null hypothesis assumes data were sampled from a normal distribution. A small p-value rejects the null hypothesis. 
-
-**Breusch-Pagan-Godfrey Test**: The null hypothesis for the bptest is constant variance (homoscedasticity). As always if the p-value is below a threshold ($\alpha = 0.05$) then heteroscedasticity is assumed. Heteroscedasticity occurs when the variance of the error terms differ across observations. The BP test statistic shows how big the problem is. Smaller is better.
-
 ### Model Search:
 **Result selection:** We chose YPLLRate as our response variable because it represented the overall data and it had the most highly correlated predictors. YPLL is the years of potential life lost before age 75 per 100,000 population (age-adjusted). YPLLRate is a measure of premature death and is used on an interactive site <https://www.countyhealthrankings.org/explore-health-rankings> to allow people to compare their State and County to others. The statement is on their home page is interesting... _"The annual Rankings provide a revealing snapshot of how health is influenced by where we live, learn, work, and play. They provide a starting point for change in communities."_ . Data is gathered from a variety of sources to create a model for comparison between States and Counties (<https://www.countyhealthrankings.org/explore-health-rankings/measures-data-sources/2020-measures>). Several other variables were considered to be the result but YPLLRate was chosen as the best representative of the data.  
 
@@ -443,18 +438,24 @@ formula(model_3)
 
 ```{r model_diagnostics, message=FALSE, warning=FALSE, echo=FALSE}
 
+
+rmse_norm_1 = get_rmse(final_model_1)/sd(log(data_1$YPLLRate))
+rmse_norm_2 = get_rmse(model_2_cox)/sd((model_2_DF$YPLLRate^0.6 - 1)/0.6)
+rmse_norm_3 = get_rmse(model_3)/sd(Raw95naomit$YPLLRate^lmda_mdl3)
+
+
 # Model 1
-info_1 = c(get_bp(final_model_1), get_sw(final_model_1), get_num_params(final_model_1), get_loocv_rmse(final_model_1), get_adj_r2(final_model_1), get_rmse(final_model_1), get_AIC(final_model_1))
+info_1 = c(get_bp(final_model_1), get_sw(final_model_1), get_num_params(final_model_1), get_loocv_rmse(final_model_1), get_adj_r2(final_model_1), get_rmse(final_model_1), get_AIC(final_model_1), rmse_norm_1)
 
 # Model 2
-info_2 = c(get_bp(model_2_cox), get_sw(model_2_cox), get_num_params(model_2_cox), get_loocv_rmse(model_2_cox), get_adj_r2(model_2_cox), get_rmse(model_2_cox), get_AIC(model_2_cox))
+info_2 = c(get_bp(model_2_cox), get_sw(model_2_cox), get_num_params(model_2_cox), get_loocv_rmse(model_2_cox), get_adj_r2(model_2_cox), get_rmse(model_2_cox), get_AIC(model_2_cox), rmse_norm_2)
 
 # Model 3
-info_3 = c(get_bp(model_3), get_sw(model_3), get_num_params(model_3), get_loocv_rmse(model_3), get_adj_r2(model_3), get_rmse(model_3), get_AIC(model_3))
+info_3 = c(get_bp(model_3), get_sw(model_3), get_num_params(model_3), get_loocv_rmse(model_3), get_adj_r2(model_3), get_rmse(model_3), get_AIC(model_3), rmse_norm_3)
 
 model_info = cbind(info_1, info_2, info_3)
 
-rownames(model_info) = c("BP Test", "Shapiro","No params", "LOOV RMSE", "Adj R2", "RMSE", "AIC")
+rownames(model_info) = c("BP Test", "Shapiro","No params", "LOOV RMSE", "Adj R2", "RMSE", "AIC", "Normalized RMSE")
 colnames(model_info) = c("Model 1", "Model 2", "Model 3")
 
 knitr::kable(model_info) %>%
